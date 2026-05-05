@@ -1,0 +1,32 @@
+version: '3.8'
+services:
+  portal-php:
+    build: { context: ., dockerfile: docker/php/Dockerfile }
+    container_name: portal_php
+    ports: ["8081:80"]
+    volumes:
+      - ./src/php-portal:/var/www/html
+      - ./storage:/var/www/html/storage:ro
+    networks: [quality-net]
+
+  busqueda-python:
+    build: { context: ., dockerfile: docker/python/Dockerfile }
+    container_name: busqueda_python
+    ports: ["8000:8000"]
+    volumes:
+      - ./src/python-service:/app
+      - ./storage:/app/storage:ro
+    networks: [quality-net]
+
+  admin-dotnet:
+    build: { context: ., dockerfile: docker/dotnet/Dockerfile }
+    container_name: admin_dotnet
+    ports: ["5000:80"]
+    volumes:
+      - ./src/dotnet-admin:/app
+      - ./storage:/app/wwwroot/files
+    networks: [quality-net]
+
+networks:
+  quality-net:
+    driver: bridge

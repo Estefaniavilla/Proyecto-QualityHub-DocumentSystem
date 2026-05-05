@@ -1,0 +1,20 @@
+# --- Bases de Datos (No queremos subir gigas de datos de prueba) ---
+postgres_data/
+ms-sql-data/
+mongo_data/
+
+# --- Archivos temporales de programación ---
+bin/
+obj/
+.vs/
+.vscode/
+__pycache__/
+*.pyc
+
+# --- Archivos del sistema y logs ---
+.DS_Store
+*.log
+npm-debug.log*
+
+# --- Seguridad ---
+.env
