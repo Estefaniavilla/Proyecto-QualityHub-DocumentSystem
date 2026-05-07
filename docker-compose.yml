@@ -1,32 +1,49 @@
 version: '3.8'
+
 services:
-  portal-php:
-    build: { context: ., dockerfile: docker/php/Dockerfile }
-    container_name: portal_php
-    ports: ["8081:80"]
+  # Base de Datos para Estefanía (.NET)
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sql_server_db
+    ports:
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=YourStrong@Password
+
+  # TU Base de Datos (Lizeth - PHP) - Aquí está el cambio del puerto
+  postgres_db:
+    image: postgres:latest
+    container_name: postgres_db_container
+    ports:
+      - "5433:5432"  # <-- CAMBIO: Usamos 5433 para que no choque con tu Windows
+    environment:
+      POSTGRES_USER: user_admin
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: quality_reports
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Base de Datos para Fernanda (Python/Mongo)
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb_container
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  # Liz Portal PHP
+  php-portal:
+    build: ./src/php-portal
+    container_name: php_portal_container
+    ports:
+      - "8081:80"
     volumes:
       - ./src/php-portal:/var/www/html
-      - ./storage:/var/www/html/storage:ro
-    networks: [quality-net]
+    depends_on:
+      - postgres_db
 
-  busqueda-python:
-    build: { context: ., dockerfile: docker/python/Dockerfile }
-    container_name: busqueda_python
-    ports: ["8000:8000"]
-    volumes:
-      - ./src/python-service:/app
-      - ./storage:/app/storage:ro
-    networks: [quality-net]
-
-  admin-dotnet:
-    build: { context: ., dockerfile: docker/dotnet/Dockerfile }
-    container_name: admin_dotnet
-    ports: ["5000:80"]
-    volumes:
-      - ./src/dotnet-admin:/app
-      - ./storage:/app/wwwroot/files
-    networks: [quality-net]
-
-networks:
-  quality-net:
-    driver: bridge
+volumes:
+  postgres_data:
+  mongo_data:
