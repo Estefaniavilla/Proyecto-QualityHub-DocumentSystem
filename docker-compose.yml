@@ -1,4 +1,4 @@
-version: '3.8'
+
 
 services:
   # Base de Datos para Estefanía (.NET)
@@ -10,19 +10,23 @@ services:
     environment:
       - ACCEPT_EULA=Y
       - MSSQL_SA_PASSWORD=YourStrong@Password
+    networks:
+      - app-network
 
-  # TU Base de Datos (Lizeth - PHP) - Aquí está el cambio del puerto
+  # TU Base de Datos (Lizeth - PHP)
   postgres_db:
-    image: postgres:latest
+    image: postgres:16
     container_name: postgres_db_container
     ports:
-      - "5433:5432"  # <-- CAMBIO: Usamos 5433 para que no choque con tu Windows
+      - "5433:5432"
     environment:
       POSTGRES_USER: user_admin
       POSTGRES_PASSWORD: password123
       POSTGRES_DB: quality_reports
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
 
   # Base de Datos para Fernanda (Python/Mongo)
   mongodb:
@@ -32,18 +36,31 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    networks:
+      - app-network
 
-  # Liz Portal PHP
+  # TU PORTAL PHP (Lizeth) - Mapeamos el File Server
   php-portal:
-    build: ./src/php-portal
+    image: chialab/php:8.2-apache
     container_name: php_portal_container
     ports:
       - "8081:80"
     volumes:
       - ./src/php-portal:/var/www/html
+      - file_server_volume:/var/www/html/uploads # <-- Tú lo ves aquí
     depends_on:
       - postgres_db
+    networks:
+      - app-network
+
+  # Aquí Estefanía y Fer agregarán sus servicios después, 
+  # pero ya les dejas listo el volumen compartido.
+
+networks:
+  app-network:
+    driver: bridge
 
 volumes:
   postgres_data:
   mongo_data:
+  file_server_volume: # <-- ESTE ES EL FILE SERVER COMPARTIDO
