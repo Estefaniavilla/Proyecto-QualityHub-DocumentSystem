@@ -53,6 +53,17 @@ services:
     networks:
       - app-network
 
+# MODULO DE BUSQUEDA (Fernanda)
+  busqueda-python:
+    build: ./docker/python
+    container_name: python_busqueda_container
+    volumes:
+      - ./docker/python:/app
+      - file_server_volume:/shared_files # <-- AQUÍ TE CONECTAS AL FILE SERVER DE LIZ
+    networks:
+      - app-network
+    depends_on:
+      - mongodb
   # Aquí Estefanía y Fer agregarán sus servicios después, 
   # pero ya les dejas listo el volumen compartido.
 
