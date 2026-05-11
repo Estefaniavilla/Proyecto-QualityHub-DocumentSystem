@@ -26,7 +26,7 @@ services:
 
   # Base de Datos para Fernanda (Python/Mongo)
   mongodb:
-    image: mongo:latest
+    image: mongo:7
     container_name: mongodb_container
     ports:
       - "27017:27017"
