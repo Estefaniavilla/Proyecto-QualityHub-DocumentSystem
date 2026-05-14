@@ -39,6 +39,7 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+      - ./uploads:/var/www/html/uploads
     networks:
       - app-network
 
@@ -49,8 +50,8 @@ services:
     ports:
       - "8081:80"
     volumes:
-      - ./src/php-portal:/var/www/html
-      - shared-files:/var/www/html/uploads 
+        - ./src/php-portal:/var/www/html
+        - ./uploads:/var/www/html/uploads
     depends_on:
       - postgres_db
     networks:
