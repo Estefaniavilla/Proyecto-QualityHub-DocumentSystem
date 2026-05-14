@@ -27,7 +27,7 @@ services:
       POSTGRES_DB: quality_reports
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - shared-files:/var/www/html/uploads
+      - ./uploads:/var/www/html/uploads
     networks:
       - app-network
 
