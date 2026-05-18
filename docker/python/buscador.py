@@ -1,151 +1,125 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from pymongo import MongoClient
-from datetime import datetime
+import os
+import shutil # Para simular la descarga
 
-# --- PALETA DE COLORES "ULTRA-PROFESIONAL" (Dark Mode Business) ---
-COLOR_BG = "#101214"          # Fondo casi negro
-COLOR_CARD = "#1C1F22"        # Color de tarjetas/paneles
-COLOR_TEXT = "#ECECED"        # Texto principal blanco suave
-COLOR_TEXT_DIM = "#9A9DA1"    # Texto secundario/etiquetas
-COLOR_ACCENT = "#007BFF"      # Azul vibrante para acentos
-COLOR_BTN = "#228B22"         # Verde bosque para el botón
-COLOR_BTN_HOVER = "#2ab52a"   # Verde más claro para hover
+# --- CONFIGURACIÓN ESTÉTICA ---
+COLOR_BG = "#121418"
+COLOR_CARD = "#1C1F26"
+COLOR_ACCENT = "#28A745" # Verde éxito
+COLOR_TEXT = "#E0E6ED"
 
 def realizar_busqueda():
     try:
-        # CONEXIÓN (Mantenemos la que te funcionó)
-        client = MongoClient("mongodb://localhost:27017/")
+        # Conexión a Mongo 7 (La versión que pidió Liz)
+        client=MongoClient("mongodb://localhost:27017/")
         db = client['proyectofinal']
         coleccion = db['metadatos']
 
-        tipo_buscado = combo_tipo.get()
-        
+        # Obtener valores de los filtros
+        busqueda_nombre = entry_nombre.get().lower()
+        busqueda_tipo = combo_tipo.get()
+        busqueda_fecha = entry_fecha.get()
+
         # Limpiar tabla
         for item in tabla.get_children():
             tabla.delete(item)
         
-        resultados = coleccion.find({"tipo": tipo_buscado})
-        
-        datos_encontrados = False
-        for i, doc in enumerate(resultados):
-            datos_encontrados = True
-            # Alternar color de fila para legibilidad
-            tag = 'evenrow' if i % 2 == 0 else 'oddrow'
-            
-            # Dar formato a la fecha si es necesario
-            fecha_str = doc.get("fecha")
-            if isinstance(fecha_str, datetime):
-                fecha_str = fecha_str.strftime("%Y-%m-%d")
+        # Construir consulta dinámica (Multicriterio)
+        query = {}
+        if busqueda_tipo != "Todos":
+            query["tipo"] = busqueda_tipo
+        if busqueda_fecha:
+            query["fecha"] = busqueda_fecha
 
-            tabla.insert("", "end", values=(
-                doc.get("nombre", "N/A").upper(), 
-                fecha_str, 
-                "✅ SÍ" if doc.get("autorizado") == "Sí" else "❌ NO"
-            ), tags=(tag,))
-            
-        if not datos_encontrados:
-            messagebox.showinfo("Búsqueda", f"No se encontraron documentos.")
-
+        # Ejecutar búsqueda
+        for doc in coleccion.find(query):
+            nombre_doc = doc.get("nombre", "")
+            # Filtro de nombre manual para ser más flexible
+            if busqueda_nombre in nombre_doc.lower():
+                estado = "✅ AUTORIZADO" if doc.get("autorizado") == "Sí" else "⏳ PENDIENTE"
+                # Insertamos los datos incluyendo el ID oculto para la descarga
+                tabla.insert("", "end", values=(
+                    nombre_doc.upper(), 
+                    doc.get("fecha", "---"), 
+                    estado,
+                    "DESCARGAR"
+                ))
     except Exception as e:
-        messagebox.showerror("Error Critico", f"Falla de conexión a MongoDB:\n{e}")
+        messagebox.showerror("Error", f"No se pudo conectar a MongoDB: {e}")
 
-# --- VENTANA PRINCIPAL ---
-ventana = tk.Tk()
-ventana.title("QualityHub - Advanced Search Dashboard")
-ventana.geometry("850x600")
-ventana.configure(bg=COLOR_BG)
+def descargar_archivo(event):
+    # Detectar si se hizo clic en la columna de 'Acciones'
+    item_id = tabla.identify_row(event.y)
+    col = tabla.identify_column(event.x)
+    
+    if col == "#4" and item_id: # Columna de acciones
+        valores = tabla.item(item_id)['values']
+        nombre_archivo = valores[0].lower()
+        
+        # RUTA DEL FILE SERVER (Mapeada en Docker)
+        ruta_origen = f"/shared_files/{nombre_archivo}"
+        ruta_destino = os.path.join(os.path.expanduser("~"), "Downloads", nombre_archivo)
+        
+        messagebox.showinfo("Descarga", f"Simulando descarga de: {nombre_archivo}\n\nDesde el File Server: {ruta_origen}")
+        # Aquí iría la lógica real de: shutil.copy(ruta_origen, ruta_destino)
 
-# --- ESTILOS AVANZADOS (ttk) ---
-style = ttk.Style()
-style.theme_use("default") # Usamos default para tener control total
+# --- INTERFAZ GRÁFICA ---
+root = tk.Tk()
+root.title("QualityHub - Sistema de Gestión de Calidad")
+root.geometry("1000x700")
+root.configure(bg=COLOR_BG)
 
-# Estilo para el Combo (Menú desplegable dark)
-style.configure("TCombobox", fieldbackground=COLOR_CARD, background=COLOR_CARD, foreground=COLOR_TEXT, arrowcolor=COLOR_TEXT)
-ventana.option_add('*TCombobox*Listbox.background', COLOR_CARD)
-ventana.option_add('*TCombobox*Listbox.foreground', COLOR_TEXT)
+# Header
+header = tk.Frame(root, bg="#1A73E8", height=80)
+header.pack(fill="x")
+tk.Label(header, text="QUALITYHUB DOCUMENT SEARCH", font=("Segoe UI", 18, "bold"), fg="white", bg="#1A73E8").pack(pady=20)
 
-# Estilo para la Tabla (La clave del diseño)
-style.configure("Treeview", 
-                background=COLOR_CARD, 
-                foreground=COLOR_TEXT, 
-                rowheight=35, # Filas más altas para aire
-                fieldbackground=COLOR_CARD,
-                font=("Inter", 10), # Tipografía moderna
-                borderwidth=0)
+# PANEL DE FILTROS (Tarjeta Superior)
+filter_card = tk.Frame(root, bg=COLOR_CARD, padx=20, pady=20)
+filter_card.pack(pady=20, padx=30, fill="x")
 
-# Estilo para las cabeceras de la tabla
-style.configure("Treeview.Heading", 
-                background=COLOR_BG, 
-                foreground=COLOR_TEXT_DIM, 
-                font=("Inter", 9, "bold"), 
-                relief="flat")
-style.map("Treeview.Heading", background=[('active', COLOR_BG)])
+# Filtro Nombre
+tk.Label(filter_card, text="Nombre del Documento:", fg=COLOR_TEXT, bg=COLOR_CARD).grid(row=0, column=0, sticky="w")
+entry_nombre = tk.Entry(filter_card, bg="#2D323E", fg="white", insertbackground="white", borderwidth=0, width=30)
+entry_nombre.grid(row=1, column=0, padx=5, pady=5)
 
-# Colores alternos para las filas
-tabla_tags = ttk.Treeview(ventana) # Dummy para configurar tags
-style.configure("Treeview", background=COLOR_CARD)
-# Estos tags se aplican en la función realizar_busqueda
-
-# --- DISEÑO DE LA INTERFAZ ---
-
-# 1. BARRA SUPERIOR (MINIMALISTA)
-header_frame = tk.Frame(ventana, bg=COLOR_BG, pady=20)
-header_frame.pack(fill="x", padx=40)
-
-tk.Label(header_frame, text="QUALITY HUB", font=("Inter", 18, "bold"), fg=COLOR_TEXT, bg=COLOR_BG).pack(side="left")
-tk.Label(header_frame, text="DOCUMENT SYSTEM", font=("Inter", 10), fg=COLOR_TEXT_DIM, bg=COLOR_BG).pack(side="left", padx=15, pady=(5,0))
-
-# 2. PANEL DE FILTROS (DISEÑO DE TARJETA)
-filter_card = tk.Frame(ventana, bg=COLOR_CARD, bd=0, highlightbackground="#2A2E32", highlightthickness=1)
-filter_card.pack(fill="x", padx=40, pady=10)
-
-# Contenedor interno para padding
-filter_container = tk.Frame(filter_card, bg=COLOR_CARD, pady=20, padx=20)
-filter_container.pack()
-
-tk.Label(filter_container, text="Filtrar por Tipo:", font=("Inter", 10), bg=COLOR_CARD, fg=COLOR_TEXT_DIM).pack(side="left", padx=10)
-
-combo_tipo = ttk.Combobox(filter_container, values=["PowerPoint", "PDF", "Excel", "Word"], font=("Inter", 11), state="readonly", width=20)
-combo_tipo.pack(side="left", padx=10)
+# Filtro Tipo
+tk.Label(filter_card, text="Tipo:", fg=COLOR_TEXT, bg=COLOR_CARD).grid(row=0, column=1, sticky="w")
+combo_tipo = ttk.Combobox(filter_card, values=["Todos", "PDF", "PowerPoint", "Excel", "Word"], state="readonly")
 combo_tipo.current(0)
+combo_tipo.grid(row=1, column=1, padx=5, pady=5)
 
-# Botón Moderno (Sin bordes, con hover)
-btn_buscar = tk.Button(filter_container, text="BUSCAR DOCUMENTOS", command=realizar_busqueda, 
-                       bg=COLOR_BTN, fg="white", font=("Inter", 10, "bold"), 
-                       relief="flat", padx=20, pady=8, cursor="hand2", activebackground=COLOR_BTN_HOVER, activeforeground="white")
-btn_buscar.pack(side="left", padx=30)
+# Filtro Fecha
+tk.Label(filter_card, text="Fecha (AAAA-MM-DD):", fg=COLOR_TEXT, bg=COLOR_CARD).grid(row=0, column=2, sticky="w")
+entry_fecha = tk.Entry(filter_card, bg="#2D323E", fg="white", insertbackground="white", borderwidth=0)
+entry_fecha.grid(row=1, column=2, padx=5, pady=5)
 
-# 3. ÁREA DE RESULTADOS
-tk.Label(ventana, text="RESULTADOS DE BÚSQUEDA", font=("Inter", 9, "bold"), fg=COLOR_TEXT_DIM, bg=COLOR_BG).pack(anchor="w", padx=45, pady=(25, 5))
+# Botón Buscar
+btn_search = tk.Button(filter_card, text="🔍 BUSCAR DOCUMENTOS", command=realizar_busqueda, bg=COLOR_ACCENT, fg="white", font=("Segoe UI", 10, "bold"), relief="flat", padx=20)
+btn_search.grid(row=1, column=3, padx=20)
 
-frame_results = tk.Frame(ventana, bg=COLOR_BG)
-frame_results.pack(fill="both", expand=True, padx=40, pady=5)
+# TABLA DE RESULTADOS
+style = ttk.Style()
+style.theme_use("clam")
+style.configure("Treeview", background=COLOR_CARD, foreground=COLOR_TEXT, fieldbackground=COLOR_CARD, rowheight=40, borderwidth=0)
+style.map("Treeview", background=[('selected', '#343B47')])
+style.configure("Treeview.Heading", background="#2D323E", foreground="white", font=("Segoe UI", 10, "bold"), borderwidth=0)
 
-# Contenedor con borde para la tabla
-table_border = tk.Frame(frame_results, bg=COLOR_CARD, bd=0, highlightbackground="#2A2E32", highlightthickness=1)
-table_border.pack(fill="both", expand=True)
+tabla = ttk.Treeview(root, columns=("Nom", "Fec", "Est", "Acc"), show="headings")
+tabla.heading("Nom", text="NOMBRE DEL DOCUMENTO")
+tabla.heading("Fec", text="FECHA DE REGISTRO")
+tabla.heading("Est", text="ESTADO")
+tabla.heading("Acc", text="ACCIONES")
 
-columnas = ("Nombre", "Fecha", "Autorizado")
-tabla = ttk.Treeview(table_border, columns=columnas, show="headings", style="Treeview")
+tabla.column("Nom", width=400)
+tabla.column("Acc", width=150, anchor="center")
+tabla.pack(pady=10, padx=30, fill="both", expand=True)
 
-# Configurar columnas
-tabla.heading("Nombre", text="NOMBRE DEL DOCUMENTO")
-tabla.heading("Fecha", text="FECHA DE REGISTRO")
-tabla.heading("Autorizado", text="ESTADO")
+# Evento para el botón de descarga en la tabla
+tabla.bind("<ButtonRelease-1>", descargar_archivo)
 
-tabla.column("Nombre", anchor="w", width=350)
-tabla.column("Fecha", anchor="center", width=150)
-tabla.column("Autorizado", anchor="center", width=150)
+tk.Label(root, text="Módulo de Búsqueda desarrollado por Fernanda v2.0 | Conectado a MongoDB 7", bg=COLOR_BG, fg="#5C6370", font=("Arial", 8)).pack(pady=10)
 
-# Colores alternos de fila (Configuración de tags)
-tabla.tag_configure('evenrow', background=COLOR_CARD)
-tabla.tag_configure('oddrow', background="#232629") # Un gris ligeramente más claro
-
-tabla.pack(fill="both", expand=True)
-
-# 4. PIE DE PÁGINA (SUBTRESALDO)
-tk.Label(ventana, text="Dashboard de Búsqueda Avanzada | Powered by MongoDB & Python | Desarrollado por Fernanda", 
-         font=("Inter", 8), fg="#4F545C", bg=COLOR_BG).pack(side="bottom", pady=15)
-
-ventana.mainloop()
+root.mainloop()
