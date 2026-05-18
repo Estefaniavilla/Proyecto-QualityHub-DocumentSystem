@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QualityHub - Sistema de Distribución Documental</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: #f8f9fa; color: #1e293b; min-height: 100vh; display: flex; justify-content: center; align-items: center; }
+        
+        /* --- ESTILO VISTA LOGIN --- */
+        #login-view { background: #ffffff; width: 340px; border-radius: 8px; border: 1px solid #e2e8f0; padding: 30px 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); text-align: center; }
+        .icon-shield { font-size: 42px; color: #0ea5e9; margin-bottom: 10px; }
+        h2 { font-size: 24px; font-weight: 700; color: #1e293b; margin-bottom: 4px; }
+        .subtitle { font-size: 13px; color: #64748b; margin-bottom: 25px; }
+        .form-group { text-align: left; margin-bottom: 18px; }
+        label { display: block; font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 6px; letter-spacing: 0.5px; }
+        input[type="text"], input[type="password"], select { width: 100%; padding: 10px 12px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; color: #1e293b; font-size: 14px; outline: none; transition: border 0.2s; }
+        input:focus, select:focus { border-color: #0ea5e9; background: #ffffff; }
+        .btn-blue { width: 100%; padding: 12px; background: #0ea5e9; color: #ffffff; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 10px; }
+        .btn-blue:hover { background: #0284c7; }
+
+        /* --- ESTILO VISTA PRINCIPAL (BUSCADOR) --- */
+        #main-view { display: none; width: 100%; max-width: 1000px; background: transparent; padding: 20px; align-self: flex-start; }
+        .banner-info { background: #e2e8f0; color: #475569; font-size: 12px; font-weight: 600; text-align: right; padding: 8px 15px; border-radius: 6px 6px 0 0; border-bottom: 1px solid #cbd5e1; }
+        .header-title { background: #0ea5e9; color: #ffffff; font-size: 18px; font-weight: 700; text-align: center; padding: 15px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .filter-card { background: #ffffff; border: 1px solid #e2e8f0; padding: 20px; display: flex; gap: 20px; align-items: flex-end; margin-bottom: 25px; }
+        .filter-group { flex: 1; }
+        .btn-search { padding: 10px 24px; background: #0ea5e9; color: #ffffff; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; height: 40px; display: flex; align-items: center; gap: 8px; }
+        .btn-search:hover { background: #0284c7; }
+        
+        /* Tabla Corporativa Clara */
+        .table-container { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+        th { background: #f1f5f9; color: #475569; font-weight: 600; font-size: 12px; padding: 12px 16px; border-bottom: 1px solid #e2e8f0; text-transform: uppercase; }
+        td { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+        tr:hover { background: #e0f2fe; color: #0369a1; }
+        .badge-status { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+        .status-auth { background: #dcfce7; color: #166534; }
+        .status-rev { background: #fef3c7; color: #92400e; }
+        .btn-download { color: #0ea5e9; text-decoration: none; font-weight: 600; font-size: 13px; }
+        .btn-download:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <div id="login-view">
+        <div class="icon-shield">🛡️</div>
+        <h2>QualityHub</h2>
+        <div class="subtitle">Document System Login</div>
+        
+        <div class="form-group">
+            <label>USUARIO</label>
+            <input type="text" id="username" value="fer_admin">
+        </div>
+        <div class="form-group">
+            <label>CONTRASEÑA</label>
+            <input type="password" id="password" value="abc123">
+        </div>
+        <button class="btn-blue" onclick="procesarLogin()">Iniciar Sesión</button>
+    </div>
+
+    <div id="main-view">
+        <div id="user-banner" class="banner-info"></div>
+        <div class="header-title">QUALITYHUB DOCUMENT SEARCH</div>
+        
+        <div class="filter-card">
+            <div class="filter-group">
+                <label>Nombre del Documento:</label>
+                <input type="text" id="search-name" placeholder="Buscar por palabra clave...">
+            </div>
+            <div class="filter-group">
+                <label>Tipo / Extensión:</label>
+                <select id="search-type">
+                    <option value="Todos">Todos</option>
+                    <option value="PDF">PDF</option>
+                    <option value="PowerPoint">PowerPoint</option>
+                    <option value="Excel">Excel</option>
+                    <option value="Word">Word</option>
+                </select>
+            </div>
+            <button class="btn-search" onclick="cargarDocumentos()">🔍 BUSCAR DOCUMENTOS</button>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 45%;">Nombre del Documento</th>
+                        <th style="width: 20%; text-align: center;">Fecha de Registro</th>
+                        <th style="width: 15%; text-align: center;">Estado</th>
+                        <th style="width: 20%; text-align: center;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="document-rows">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let datosUsuario = null;
+
+        async function procesarLogin() {
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ usuario: u, contrasena: p })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                datosUsuario = data;
+                document.getElementById('login-view').style.display = 'none';
+                document.getElementById('main-view').style.display = 'block';
+                document.body.style.alignItems = 'flex-start';
+                
+                document.getElementById('user-banner').innerText = 
+                    `Compañía: ${data.compania}   |   Departamento: ${data.departamento}   |   Usuario: ${data.usuario.toUpperCase()}`;
+                
+                cargarDocumentos();
+            } else {
+                alert(data.error || "Credenciales incorrectas");
+            }
+        }
+
+        async function cargarDocumentos() {
+            if (!datosUsuario) return;
+            
+            const nombre = document.getElementById('search-name').value;
+            const tipo = document.getElementById('search-type').value;
+            
+            let url = `/api/buscar?compania=${encodeURIComponent(datosUsuario.compania)}&departamento=${encodeURIComponent(datosUsuario.departamento)}`;
+            if (nombre) url += `&nombre=${encodeURIComponent(nombre)}`;
+            if (tipo !== 'Todos') url += `&tipo=${encodeURIComponent(tipo)}`;
+
+            const res = await fetch(url);
+            const documentos = await res.json();
+            
+            const tbody = document.getElementById('document-rows');
+            tbody.innerHTML = '';
+
+            if (documentos.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#64748b; padding:30px;">No se encontraron documentos autorizados para tu área en MongoDB.</td></tr>`;
+                return;
+            }
+
+            documentos.forEach(doc => {
+                const statusClass = doc.estado === 'Autorizado' ? 'status-auth' : 'status-rev';
+                tbody.innerHTML += `
+                    <tr>
+                        <td>📄 ${doc.nombre}</td>
+                        <td style="text-align: center;">${doc.fecha}</td>
+                        <td style="text-align: center;"><span class="badge-status ${statusClass}">${doc.estado}</span></td>
+                        <td style="text-align: center;"><a href="#" class="btn-download">📥 Descargar</a></td>
+                    </tr>
+                `;
+            });
+        }
+    </script>
+</body>
+</html>
