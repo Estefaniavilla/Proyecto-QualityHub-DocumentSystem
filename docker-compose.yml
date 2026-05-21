@@ -15,21 +15,22 @@ services:
     volumes:
       - shared-files:/shared/storage
 
-  # TU Base de Datos (Lizeth - PHP)
   postgres_db:
     image: postgres:16
     container_name: postgres_db_container
-    ports:
-      - "5433:5432"
     environment:
       POSTGRES_USER: user_admin
       POSTGRES_PASSWORD: password123
       POSTGRES_DB: quality_reports
+    ports:
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./uploads:/var/www/html/uploads
+      - ./src/php-portal/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+              - ./uploads:/var/www/html/uploads
     networks:
       - app-network
+
 
   # Base de Datos para Fernanda (Python/Mongo)
   mongodb:
