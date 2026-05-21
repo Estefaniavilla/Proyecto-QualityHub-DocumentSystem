@@ -12,13 +12,12 @@ $usuario_id = $_SESSION['usuario_id'];
 $nomina = $_SESSION['usuario_nomina'];
 $nombre_usuario = $_SESSION['usuario_nombre'] ?? 'Operario de Planta';
 
-// ACCIÓN 1: REGISTRAR LOG DE ACCESO Y MOSTRAR FICHA TÉCNICA + PDF
+// ACCIÓN 1: REGISTRAR LOG DE ACCESO Y MOSTRAR FICHA TÉCNICA + PDF REAL desde VS Code
 if (isset($_GET['accion']) && $_GET['accion'] === 'ver' && isset($_GET['id'])) {
     $documento_id = intval($_GET['id']);
     
     try {
-        // 1. OBTENER LOS DATOS COMPLETOS DEL DOCUMENTO (Ficha Técnica solicitada)
-        // Nota: Ajusta los nombres de las columnas si en tu tabla cambian ligeramente
+        // 1. OBTENER LOS DATOS COMPLETOS DEL DOCUMENTO (Ficha Técnica de PostgreSQL)
         $stmtDoc = $pdo->prepare("SELECT * FROM documentos WHERE id = :id");
         $stmtDoc->execute([':id' => $documento_id]);
         $doc = $stmtDoc->fetch(PDO::FETCH_ASSOC);
@@ -27,7 +26,7 @@ if (isset($_GET['accion']) && $_GET['accion'] === 'ver' && isset($_GET['id'])) {
             die("El documento solicitado no existe en los registros de la planta.");
         }
 
-        // 2. REGISTRAR EL LOG DE AUDITORÍA (Trazabilidad estricta en PostgreSQL)
+        // 2. REGISTRAR EL LOG DE AUDITORÍA (Trazabilidad obligatoria)
         $stmtLog = $pdo->prepare("
             INSERT INTO logs_acceso (usuario_id, nomina, documento_id, accion, fecha_acceso) 
             VALUES (:usuario_id, :nomina, :documento_id, 'VISUALIZACION', CURRENT_TIMESTAMP)
@@ -38,7 +37,6 @@ if (isset($_GET['accion']) && $_GET['accion'] === 'ver' && isset($_GET['id'])) {
             ':documento_id' => $documento_id
         ]);
         
-        // En lugar de hacer un redirect con un alert, aquí mismo pintamos la interfaz de visualización
         ?>
         <!DOCTYPE html>
         <html lang="es">
@@ -57,116 +55,40 @@ if (isset($_GET['accion']) && $_GET['accion'] === 'ver' && isset($_GET['id'])) {
                     --primary: #0284c7;
                 }
                 body {
-                    margin: 0;
-                    font-family: 'Inter', sans-serif;
-                    background-color: var(--bg-main);
-                    color: var(--text-dark);
-                    display: flex;
-                    flex-direction: column;
-                    height: 100vh;
-                    overflow: hidden;
+                    margin: 0; font-family: 'Inter', sans-serif;
+                    background-color: var(--bg-main); color: var(--text-dark);
+                    display: flex; flex-direction: column; height: 100vh; overflow: hidden;
                 }
-                /* BARRA SUPERIOR */
                 .topbar {
-                    height: 60px;
-                    background: #ffffff;
-                    border-bottom: 1px solid var(--border-color);
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    padding: 0 25px;
-                    flex-shrink: 0;
+                    height: 60px; background: #ffffff; border-bottom: 1px solid var(--border-color);
+                    display: flex; align-items: center; justify-content: space-between; padding: 0 25px; flex-shrink: 0;
                 }
                 .btn-back {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 8px;
-                    text-decoration: none;
-                    color: var(--text-dark);
-                    font-weight: 600;
-                    font-size: 0.85rem;
-                    padding: 8px 14px;
-                    border: 1px solid var(--border-color);
-                    border-radius: 6px;
-                    background: #ffffff;
-                    transition: 0.2s;
+                    display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+                    color: var(--text-dark); font-weight: 600; font-size: 0.85rem; padding: 8px 14px;
+                    border: 1px solid var(--border-color); border-radius: 6px; background: #ffffff; transition: 0.2s;
                 }
                 .btn-back:hover { background: #f1f5f9; }
-
-                /* CONTENEDOR DIVIDIDO */
-                .viewer-container {
-                    display: flex;
-                    flex-grow: 1;
-                    height: calc(100vh - 60px);
-                }
-                /* PANEL IZQUIERDO: METADATOS ISO */
+                .viewer-container { display: flex; flex-grow: 1; height: calc(100vh - 60px); }
                 .metadata-panel {
-                    width: 360px;
-                    background: #ffffff;
-                    border-right: 1px solid var(--border-color);
-                    padding: 24px;
-                    overflow-y: auto;
-                    box-sizing: border-box;
-                    flex-shrink: 0;
+                    width: 360px; background: #ffffff; border-right: 1px solid var(--border-color);
+                    padding: 24px; overflow-y: auto; box-sizing: border-box; flex-shrink: 0;
                 }
-                .doc-header {
-                    border-bottom: 2px solid #f1f5f9;
-                    padding-bottom: 16px;
-                    margin-bottom: 20px;
-                }
+                .doc-header { border-bottom: 2px solid #f1f5f9; padding-bottom: 16px; margin-bottom: 20px; }
                 .iso-badge {
-                    background: #e0f2fe;
-                    color: #0369a1;
-                    padding: 4px 8px;
-                    border-radius: 4px;
-                    font-size: 0.75rem;
-                    font-weight: 700;
-                    text-transform: uppercase;
+                    background: #e0f2fe; color: #0369a1; padding: 4px 8px;
+                    border-radius: 4px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
                 }
-                .doc-header h1 {
-                    font-size: 1.25rem;
-                    margin: 10px 0 8px 0;
-                    font-weight: 700;
-                    color: var(--text-dark);
-                }
-                .badge-status {
-                    padding: 4px 10px;
-                    border-radius: 50px;
-                    font-size: 0.75rem;
-                    font-weight: 600;
-                    display: inline-block;
-                }
+                .doc-header h1 { font-size: 1.25rem; margin: 10px 0 8px 0; font-weight: 700; color: var(--text-dark); }
+                .badge-status { padding: 4px 10px; border-radius: 50px; font-size: 0.75rem; font-weight: 600; display: inline-block; }
                 .badge-status.vigente { background-color: #dcfce7; color: #15803d; }
-                .badge-status.obsoleto { background-color: #fee2e2; color: #b91c1c; }
-
+                
                 .meta-group { margin-bottom: 18px; }
-                .meta-label {
-                    font-size: 0.7rem;
-                    text-transform: uppercase;
-                    color: var(--text-muted);
-                    font-weight: 700;
-                    letter-spacing: 0.5px;
-                    margin-bottom: 4px;
-                    display: block;
-                }
-                .meta-value {
-                    font-size: 0.88rem;
-                    color: var(--text-dark);
-                    font-weight: 500;
-                }
-                /* PANEL DERECHO: PDF */
-                .pdf-panel {
-                    flex-grow: 1;
-                    background: #525659;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                }
-                iframe {
-                    width: 100%;
-                    height: 100%;
-                    border: none;
-                }
+                .meta-label { font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.5px; margin-bottom: 4px; display: block; }
+                .meta-value { font-size: 0.88rem; color: var(--text-dark); font-weight: 500; }
+                
+                .pdf-panel { flex-grow: 1; background: #525659; display: flex; justify-content: center; align-items: center; }
+                iframe { width: 100%; height: 100%; border: none; }
             </style>
         </head>
         <body>
@@ -182,58 +104,59 @@ if (isset($_GET['accion']) && $_GET['accion'] === 'ver' && isset($_GET['id'])) {
             <div class="viewer-container">
                 <div class="metadata-panel">
                     <div class="doc-header">
-                        <span class="iso-badge"><?php echo htmlspecialchars($doc['codigo_iso'] ?? 'ISO-9001'); ?></span>
+                        <span class="iso-badge"><?php echo htmlspecialchars($doc['codigo_iso']); ?></span>
                         <h1><?php echo htmlspecialchars($doc['titulo']); ?></h1>
-                        <span class="badge-status <?php echo (strtolower($doc['estado'] ?? '') === 'obsoleto') ? 'obsoleto' : 'vigente'; ?>">
-                            <?php echo htmlspecialchars($doc['estado'] ?? 'Vigente'); ?>
-                        </span>
+                        <span class="badge-status vigente">Vigente</span>
                     </div>
 
                     <div class="meta-group">
                         <span class="meta-label"><i class="fa-solid fa-code-branch"></i> Versión del PDF</span>
-                        <div class="meta-value">Revisión <?php echo htmlspecialchars($doc['version'] ?? '1.0'); ?></div>
+                        <div class="meta-value">Revisión <?php echo htmlspecialchars($doc['version']); ?></div>
                     </div>
 
                     <div class="meta-group">
                         <span class="meta-label"><i class="fa-solid fa-user-check"></i> Autorizado por</span>
                         <div class="meta-value" style="color: #0369a1; font-weight: 600;">
-                            <?php echo htmlspecialchars($doc['autorizado_por'] ?? 'Aseguramiento de Calidad'); ?>
+                            <?php echo htmlspecialchars($doc['autorizado_por']); ?>
                         </div>
                     </div>
 
                     <div class="meta-group">
                         <span class="meta-label"><i class="fa-solid fa-calendar-check"></i> Fecha de Autorización</span>
-                        <div class="meta-value"><?php echo htmlspecialchars($doc['fecha_autorizacion'] ?? $doc['fecha_creacion'] ?? 'N/A'); ?></div>
+                        <div class="meta-value"><?php echo htmlspecialchars($doc['fecha_autorizacion']); ?></div>
                     </div>
 
                     <div class="meta-group">
                         <span class="meta-label"><i class="fa-solid fa-gears"></i> Proceso Asociado</span>
-                        <div class="meta-value"><?php echo htmlspecialchars($doc['proceso_sistema'] ?? 'Control Operacional de Planta'); ?></div>
+                        <div class="meta-value"><?php echo htmlspecialchars($doc['proceso_sistema']); ?></div>
                     </div>
 
                     <div style="margin-top: 30px; padding: 12px; background: #f8fafc; border-radius: 6px; border: 1px dashed var(--border-color);">
-                        <span class="meta-label" style="color: #16a34a;"><i class="fa-solid fa-clock-rotate-left"></i> Evidencia de Trazabilidad</span>
+                        <span class="meta-label" style="color: #16a34a;"><i class="fa-solid fa-clock-rotate-left"></i> Archivo Local Cargado</span>
                         <p style="margin: 4px 0 0 0; font-size: 0.75rem; color: var(--text-muted); line-height: 1.4;">
-                            Acceso registrado de forma permanente en PostgreSQL para auditoría del sistema Polyglot Stack.
+                            Ruta del File-Server local: <code>archivos/<?php echo htmlspecialchars($doc['nombre_fisico']); ?></code>
                         </p>
                     </div>
                 </div>
 
                 <div class="pdf-panel">
                     <?php 
-                    // Asumiendo que tus archivos físicos reales se guardan en una carpeta llamada 'archivos/' 
-                    // y la columna 'nombre_fisico' o 'ruta' guarda el nombre exacto del archivo (ej. procedimiento_soldadura.pdf)
-                    $archivo_pdf = $doc['nombre_fisico'] ?? $doc['ruta'] ?? '';
+                    // Tomamos el campo 'nombre_fisico' de tu Postgres (ej: 'MNC-001.pdf')
+                    $archivo_pdf = $doc['nombre_fisico'];
+                    // Armamos la ruta hacia la carpeta que se ve en tu VS Code
                     $ruta_completa = "archivos/" . $archivo_pdf;
 
+                    // Verificamos si de verdad guardaste el archivo ahí
                     if (!empty($archivo_pdf) && file_exists($ruta_completa)): 
                     ?>
                         <iframe src="<?php echo htmlspecialchars($ruta_completa); ?>#toolbar=1&navpanes=0"></iframe>
                     <?php else: ?>
                         <div style="color: #ffffff; text-align: center; padding: 20px;">
-                            <i class="fa-solid fa-file-pdf" style="font-size: 3.5rem; color: #cbd5e1; margin-bottom: 15px;"></i>
-                            <p style="margin: 0; font-size: 0.95rem;">Visor cargado correctamente.</p>
-                            <span style="font-size: 0.8rem; color: #94a3b8;">(Coloca un archivo PDF real en la carpeta /archivos con el nombre: <?php echo htmlspecialchars($archivo_pdf ?: 'documento.pdf'); ?>)</span>
+                            <i class="fa-solid fa-circle-xmark" style="font-size: 3.5rem; color: #ef4444; margin-bottom: 15px;"></i>
+                            <p style="margin: 0; font-size: 0.95rem; font-weight: 600;">Error en File-Server Local</p>
+                            <span style="font-size: 0.8rem; color: #94a3b8; display: block; margin-top: 5px;">
+                                No se encontró el archivo físico: <code><?php echo htmlspecialchars($ruta_completa); ?></code>
+                            </span>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -242,13 +165,12 @@ if (isset($_GET['accion']) && $_GET['accion'] === 'ver' && isset($_GET['id'])) {
         </html>
         <?php
         exit;
-        
     } catch (PDOException $e) {
-        die("Error al registrar auditoría en Postgres: " . $e->getMessage());
+        die("Error en el sistema de auditoría: " . $e->getMessage());
     }
 }
 
-// ACCIÓN 2: ENVIAR REVISIÓN / REPORTE (Cuando envían el Modal - Esto se queda igual de funcional)
+// ACCIÓN 2: ENVIAR REVISIÓN / REPORTE (Se queda intacto)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion_reporte']) && $_POST['accion_reporte'] === 'crear_revision') {
     $documento_id = intval($_POST['documento_id']);
     $observaciones = trim($_POST['observaciones']);
@@ -263,7 +185,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion_reporte']) && 
             INSERT INTO sugerencias_revision (documento_id, usuario_id, observaciones, estado_revision, fecha_solicitud) 
             VALUES (:documento_id, :usuario_id, :observaciones, 'Pendiente de Auditoria', CURRENT_TIMESTAMP)
         ");
-        
         $stmtRev->execute([
             ':documento_id' => $documento_id,
             ':usuario_id' => $usuario_id,
@@ -275,13 +196,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion_reporte']) && 
             window.location.href = 'dashboard.php';
         </script>";
         exit;
-        
     } catch (PDOException $e) {
         die("Error al guardar el reporte en Postgres: " . $e->getMessage());
     }
 }
 
-// Si entran sin acciones válidas, los regresamos
 header("Location: dashboard.php");
 exit;
 ?>

@@ -17,3 +17,4 @@ try {
     die("Error de conexión a la base de datos: " . $e->getMessage());
 }
 ?>
+

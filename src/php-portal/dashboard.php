@@ -91,8 +91,8 @@ try {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
-            --sidebar-bg: #1e293b; /* Slate más oscuro profesional */
-            --sidebar-hover: #0284c7; /* Azul reactivo corporativo */
+            --sidebar-bg: #1e293b; 
+            --sidebar-hover: #0284c7; 
             --main-bg: #f8fafc;
             --border-color: #e2e8f0;
             --text-dark: #0f172a;
@@ -315,8 +315,12 @@ try {
         }
 
         .doc-code {
-            color: #334155;
-            font-weight: 600;
+            color: #0284c7;
+            font-weight: 700;
+            background-color: #f0f9ff;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
         }
 
         .doc-main {
@@ -327,7 +331,7 @@ try {
 
         .doc-icon-pdf {
             color: #ef4444;
-            font-size: 1.4rem;
+            font-size: 1.6rem;
         }
 
         .doc-title {
@@ -337,8 +341,12 @@ try {
         }
 
         .doc-filename {
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             color: var(--text-muted);
+            font-family: monospace;
+            background: #f1f5f9;
+            padding: 1px 4px;
+            border-radius: 4px;
         }
 
         .badge-ext {
@@ -375,31 +383,31 @@ try {
         }
 
         .btn-view {
-            padding: 8px 12px;
-            background-color: #ffffff;
-            border: 1px solid var(--border-color);
+            padding: 8px 14px;
+            background-color: #0284c7;
+            border: 1px solid transparent;
             border-radius: 6px;
-            color: #334155;
+            color: #ffffff;
             text-decoration: none;
             font-size: 0.8rem;
-            font-weight: 500;
+            font-weight: 600;
             display: inline-flex;
             align-items: center;
             gap: 6px;
             transition: 0.15s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
 
         .btn-view:hover {
-            background-color: #f1f5f9;
-            border-color: #cbd5e1;
+            background-color: #0369a1;
         }
 
         .btn-review {
             padding: 8px 12px;
-            background-color: #f1f5f9;
-            border: 1px solid transparent;
+            background-color: #ffffff;
+            border: 1px solid var(--border-color);
             border-radius: 6px;
-            color: #1e293b;
+            color: #ef4444;
             cursor: pointer;
             font-size: 0.8rem;
             font-weight: 500;
@@ -410,10 +418,11 @@ try {
         }
 
         .btn-review:hover {
-            background-color: #e2e8f0;
+            background-color: #fef2f2;
+            border-color: #fca5a5;
         }
 
-        /* TARGETAS DE REPORTES ESTILO GRID */
+        /* TARJETAS DE REPORTES ESTILO GRID */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -501,7 +510,7 @@ try {
         }
 
         .btn-send {
-            background: var(--sidebar-hover);
+            background: #ef4444;
             color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500;
         }
     </style>
@@ -579,13 +588,13 @@ try {
                             <?php else: ?>
                                 <?php foreach ($todos_documentos as $doc): ?>
                                     <tr class="doc-row">
-                                        <td class="doc-code"><?php echo htmlspecialchars($doc['codigo_iso']); ?></td>
+                                        <td><span class="doc-code"><?php echo htmlspecialchars($doc['codigo_iso']); ?></span></td>
                                         <td>
                                             <div class="doc-main">
                                                 <i class="fa-solid fa-file-pdf doc-icon-pdf"></i>
                                                 <div>
                                                     <span class="doc-title"><?php echo htmlspecialchars($doc['titulo']); ?></span>
-                                                    <span class="doc-filename"><?php echo htmlspecialchars($doc['nombre_fisico']); ?></span>
+                                                    <span class="doc-filename"><i class="fa-solid fa-folder-tree"></i> archivos/<?php echo htmlspecialchars($doc['nombre_fisico']); ?></span>
                                                 </div>
                                             </div>
                                         </td>
@@ -593,10 +602,10 @@ try {
                                         <td><span class="badge-status vigente">Vigente</span></td>
                                         <td class="actions-cell">
                                             <a href="acciones_documentos.php?accion=ver&id=<?php echo $doc['id']; ?>" class="btn-view">
-                                                <i class="fa-regular fa-eye"></i> Consultar
+                                                <i class="fa-regular fa-eye"></i> Abrir Visor PDF
                                             </a>
                                             <button class="btn-review" onclick="openReviewModal(<?php echo $doc['id']; ?>, '<?php echo htmlspecialchars($doc['titulo']); ?>')">
-                                                <i class="fa-solid fa-file-shield"></i> Reportar Falla
+                                                <i class="fa-solid fa-triangle-exclamation"></i> Reportar
                                             </button>
                                         </td>
                                     </tr>
@@ -633,7 +642,7 @@ try {
                             <?php else: ?>
                                 <?php foreach ($todos_documentos as $doc): ?>
                                     <tr class="doc-row">
-                                        <td class="doc-code"><?php echo htmlspecialchars($doc['codigo_iso']); ?></td>
+                                        <td><span class="doc-code" style="color:#64748b; background:#f1f5f9;"><?php echo htmlspecialchars($doc['codigo_iso']); ?></span></td>
                                         <td>
                                             <div class="doc-main">
                                                 <i class="fa-solid fa-file-pdf doc-icon-pdf" style="color: #64748b;"></i>
@@ -681,9 +690,9 @@ try {
                                 <?php foreach ($logs_acceso as $log): ?>
                                     <tr class="doc-row">
                                         <td><strong>#<?php echo $log['id']; ?></strong></td>
-                                        <td class="doc-code"><?php echo htmlspecialchars($log['codigo_iso'] ?? 'N/A'); ?></td>
+                                        <td><span class="doc-code"><?php echo htmlspecialchars($log['codigo_iso'] ?? 'N/A'); ?></span></td>
                                         <td style="font-weight: 500;"><?php echo htmlspecialchars($log['documento_nombre'] ?? 'Documento Eliminado'); ?></td>
-                                        <td><span style="color: var(--sidebar-hover); font-weight: 600;"><?php echo htmlspecialchars($log['accion']); ?></span></td>
+                                        <td><span style="color: #0284c7; font-weight: 600;"><i class="fa-solid fa-check-double"></i> <?php echo htmlspecialchars($log['accion']); ?></span></td>
                                         <td style="color: var(--text-muted);"><?php echo htmlspecialchars($log['fecha_acceso']); ?></td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -705,7 +714,7 @@ try {
                     ?>
                     <div class="stat-card">
                         <h3>Asignados a tu Área</h3>
-                        <div class="stat-number" style="color: var(--sidebar-hover);"><?php echo $acumulado; ?></div>
+                        <div class="stat-number" style="color: #0284c7;"><?php echo $acumulado; ?></div>
                     </div>
                     
                     <?php foreach ($estadisticas as $est): ?>
