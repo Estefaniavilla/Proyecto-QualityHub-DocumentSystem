@@ -2,11 +2,13 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Instalar Flask para levantar el servidor web y Pymongo para conectarse a MongoDB
-RUN pip install flask pymongo
+# Instalar las librerías necesarias directamente
+RUN pip install --no-cache-dir flask pymongo
 
+# Copiar el contenido al directorio de trabajo
 COPY . /app
 
 EXPOSE 5000
 
+# El comando correcto: el archivo está en la raíz de la carpeta montada
 CMD ["python", "buscador.py"]
