@@ -14,6 +14,7 @@ services:
       - app-network
     volumes:
       - shared-files:/shared/storage
+  
 
   postgres_db:
     image: postgres:16
@@ -52,7 +53,7 @@ services:
       - "8081:80"
     volumes:
         - ./src/php-portal:/var/www/html
-        - ./uploads:/var/www/html/uploads
+        - ./storage/actuales:/var/www/html/uploads
     depends_on:
       - postgres_db
     networks:
