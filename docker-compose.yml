@@ -19,24 +19,17 @@ services:
     image: postgres:16
     container_name: postgres_db_container
     environment:
-<<<<<<< HEAD
-      - POSTGRES_USER=user_admin
-      - POSTGRES_PASSWORD=password123
-      - POSTGRES_DB=quality_reports
-=======
       POSTGRES_USER: user_admin
       POSTGRES_PASSWORD: password123
       POSTGRES_DB: quality_reports
     ports:
       - "5433:5432"
->>>>>>> 66e92110bea0bc93beb5f3dca62763366b7b5b14
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./src/php-portal/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
       - ./storage/actuales:/var/www/html/storage/actuales
     networks:
       - app-network
-
 
   # Base de Datos para Fernanda (Python/Mongo)
   mongodb:
@@ -57,14 +50,10 @@ services:
     ports:
       - "8081:80"
     volumes:
-<<<<<<< HEAD
       - ./src/php-portal:/var/www/html
       - ./uploads:/var/www/html/uploads
-=======
-         - ./src/php-portal:/var/www/html
-         - ./src/php-portal/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
-         - ./storage/actuales:/var/www/html/storage/actuales
->>>>>>> 66e92110bea0bc93beb5f3dca62763366b7b5b14
+      - ./src/php-portal/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+      - ./storage/actuales:/var/www/html/storage/actuales
     depends_on:
       - postgres_db
     networks:
