@@ -40,19 +40,19 @@ CREATE TABLE documentos (
     documento_ubicacion TEXT NOT NULL -- Columna clave para el filtro de seguridad
 );
 
--- DEPARTAMENTO: Alpha - Calidad | Usuario: Estefania (Auditor)
+--
 INSERT INTO documentos (codigo_iso, titulo, version, tipo_archivo, nombre_fisico, estado, usuario_modificado, documento_ubicacion) VALUES 
 ('ISO-9001-MAN', 'Manual de Calidad ISO 9001', 'v1.0', 'pdf', 'Manual de Calidad ISO 9001.pdf', 'Vigente', 'Estefania (Auditor)', 'Alpha - Calidad'),
 ('ISO-9001-CNC', 'Control de Productos No Conformes', 'v1.0', 'docx', 'Control de Productos No Conformes.docx', 'Vigente', 'Estefania (Auditor)', 'Alpha - Calidad'),
 ('ISO-9001-AUD', 'Procedimiento de Auditoría Interna', 'v1.0', 'docx', 'Procedimiento de Auditoría Interna.docx', 'Vigente', 'Estefania (Auditor)', 'Alpha - Calidad');
 
--- DEPARTAMENTO: Alpha - Producción | Usuario: Ing. Pedro Páramo
+--
 INSERT INTO documentos (codigo_iso, titulo, version, tipo_archivo, nombre_fisico, estado, usuario_modificado, documento_ubicacion) VALUES 
 ('ISO-14001-MAN', 'Bitácora de Mantenimiento Preventivo', 'v1.0', 'pdf', 'Bitacora_Mantenimiento_Preventivo.pdf', 'Vigente', 'Ing. Pedro Páramo', 'Alpha - Producción'),
 ('ISO-14001-CAP', 'Programa de Capacitación Anual', 'v1.0', 'pdf', 'Programa de Capacitación Anual.pdf', 'Vigente', 'Ing. Pedro Páramo', 'Alpha - Producción'),
 ('ISO-14001-AMB', 'Plan de Gestión Ambiental', 'v1.0', 'pdf', 'Plan de Gestión Ambiental.pdf', 'Vigente', 'Ing. Pedro Páramo', 'Alpha - Producción');
 
--- DEPARTAMENTO: Alpha - Gerencia | Usuario: Ing. Ramiro Juárez
+-- 
 INSERT INTO documentos (codigo_iso, titulo, version, tipo_archivo, nombre_fisico, estado, usuario_modificado, documento_ubicacion) VALUES 
 ('ISO-9000-IDE', 'Manual de Identidad Institucional', 'v1.0', 'pdf', 'Manual de Identidad Institucional.pdf', 'Vigente', 'Ing. Ramiro Juárez', 'Alpha - Gerencia'),
 ('ISO-9000-SEG', 'Política de Seguridad de la Información', 'v1.0', 'pdf', 'Politica de Seguridad de la Informacion.pdf', 'Vigente', 'Ing. Ramiro Juárez', 'Alpha - Gerencia'),

@@ -1,9 +1,16 @@
 <?php
-// Aseguramos que la sesión inicie limpia y destruya rastros anteriores si se viene de un logout
+// Aseguramos que la sesión inicie
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 require_once 'db.php'; 
+
+// CRÍTICO: Si el usuario ya inició sesión antes, lo mandamos directo a dashboard.php.
+// Asegúrate de que tu archivo de dashboard se llame exactamente "dashboard.php"
+if (isset($_SESSION['usuario_id'])) {
+    header("Location: dashboard.php");
+    exit();
+}
 
 $error = '';
 
@@ -11,7 +18,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nomina = trim($_POST['nomina']);
     $password = trim($_POST['password']);
 
-    // Ya no requerimos validar la ubicación elegida desde el formulario
     if (!empty($nomina) && !empty($password)) {
         try {
             $stmt = $pdo->prepare("SELECT * FROM usuarios WHERE nomina = :nomina LIMIT 1");
@@ -19,7 +25,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
             // Validación limpia: Solo comparamos usuario y contraseña. 
-            // La ubicación se carga directo de lo que está guardado en la Base de Datos.
             if ($user && $password === $user['password']) {
                 $_SESSION['usuario_id'] = $user['id'];
                 $_SESSION['usuario_nombre'] = $user['nombre'];
@@ -27,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['usuario_ubicacion'] = $user['usuario_ubicacion']; // <-- Asignación automática
 
                 header("Location: dashboard.php");
-                exit;
+                exit();
             } else {
                 $error = "Acceso denegado. Credenciales incorrectas.";
             }
@@ -48,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* 🎨 NUEVA TEMÁTICA CLARA INTEGRAL DE ACUERDO AL CUERPO DEL DASHBOARD */
+        /* 🎨 TEMÁTICA CLARA INTEGRAL DE ACUERDO AL CUERPO DEL DASHBOARD */
         :root {
             --primary-blue: #0284c7; /* Azul corporativo del menú */
             --primary-hover: #0369a1; 
@@ -252,7 +257,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <?php if (!empty($error)): ?>
-        <div class="error-message"><?php echo $error; ?></div>
+        <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
     <?php endif; ?>
 
     <form action="" method="POST" id="loginForm" autocomplete="off">
