@@ -1,0 +1,2 @@
+{"_id":{"$oid":"6a0f5644bff7ea9d04331582"},"usuario":"fer_admin","contrasena":"12345","compania":"Compania_A","departamento":"Calidad"}
+{"_id":{"$oid":"6a1dc49aeddc7a922d35fa76"},"usuario":"auditor_global","contrasena":"54321","compania":"Compania_B","departamento":"Auditoría"}
