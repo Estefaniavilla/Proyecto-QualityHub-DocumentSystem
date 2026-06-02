@@ -1,143 +1,241 @@
+<?php
+// Aseguramos que la sesión inicie
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+require_once 'db.php'; 
+
+// CRÍTICO: Si el usuario ya inició sesión antes, lo mandamos directo a dashboard.php.
+// Asegúrate de que tu archivo de dashboard se llame exactamente "dashboard.php"
+if (isset($_SESSION['usuario_id'])) {
+    header("Location: dashboard.php");
+    exit();
+}
+
+$error = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $nomina = trim($_POST['nomina']);
+    $password = trim($_POST['password']);
+
+    if (!empty($nomina) && !empty($password)) {
+        try {
+            $stmt = $pdo->prepare("SELECT * FROM usuarios WHERE nomina = :nomina LIMIT 1");
+            $stmt->execute([':nomina' => $nomina]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            // Validación limpia: Solo comparamos usuario y contraseña. 
+            if ($user && $password === $user['password']) {
+                $_SESSION['usuario_id'] = $user['id'];
+                $_SESSION['usuario_nombre'] = $user['nombre'];
+                $_SESSION['usuario_nomina'] = $user['nomina'];
+                $_SESSION['usuario_ubicacion'] = $user['usuario_ubicacion']; // <-- Asignación automática
+
+                header("Location: dashboard.php");
+                exit();
+            } else {
+                $error = "Acceso denegado. Credenciales incorrectas.";
+            }
+        } catch (PDOException $e) {
+            $error = "Error de conexión con la base de datos: " . $e->getMessage();
+        }
+    } else {
+        $error = "Por favor, completa todos los campos del formulario.";
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QualityDoc | Login</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        /* 🎨 TEMÁTICA CLARA INTEGRAL DE ACUERDO AL CUERPO DEL DASHBOARD */
         :root {
-            --primary-cian: #00f2ff;
-            --dark-bg: #0a0e17;
-            --glass-bg: rgba(255, 255, 255, 0.05);
-            --text-white: #ffffff;
+            --primary-blue: #0284c7; /* Azul corporativo del menú */
+            --primary-hover: #0369a1; 
+            --bg-light: #f8fafc; /* Gris/azul claro de tu dashboard principal */
+            --card-bg: #ffffff; /* Blanco puro */
+            --text-dark: #0f172a; /* Slate oscuro para máxima lectura */
+            --text-muted: #37619c; /* Subtítulos e íconos */
+            --border-color: #e2e8f0; /* Bordes sutiles limpios */
         }
 
         body {
             margin: 0;
             padding: 0;
-            font-family: 'Poppins', sans-serif;
-            background: radial-gradient(circle at center, #1a2a44 0%, #0a0e17 100%);
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #2d568c 0%, var(--bg-light) 100%);
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             overflow: hidden;
+            position: relative;
         }
 
-        /* Fondo animado sutil */
+        /* Textura sutil industrial de fondo */
         body::before {
             content: "";
             position: absolute;
             width: 200%;
             height: 200%;
             background: url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
-            opacity: 0.1;
+            opacity: 0.02;
             z-index: -1;
         }
 
+        /* Tarjeta Blanca Limpia */
         .login-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 40px;
-            width: 400px;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 45px 40px;
+            width: 410px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.03);
             text-align: center;
+            box-sizing: border-box;
         }
 
         .logo-section h1 {
-            color: var(--primary-cian);
+            color: var(--primary-blue);
             margin: 0;
-            font-size: 2.2rem;
-            letter-spacing: 2px;
-            text-transform: uppercase;
+            font-size: 2.3rem;
+            letter-spacing: -0.5px;
+            font-weight: 700;
         }
 
         .logo-section p {
-            color: #888;
-            font-size: 0.9rem;
-            margin-bottom: 30px;
+            color: var(--text-muted);
+            font-size: 0.92rem;
+            margin-top: 6px;
+            margin-bottom: 35px;
+            font-weight: 500;
         }
 
         .avatar-group {
             display: flex;
             justify-content: center;
             gap: 20px;
-            margin-bottom: 30px;
+            margin-bottom: 35px;
         }
 
-        .avatar-group i {
-            font-size: 50px;
-            color: rgba(255, 255, 255, 0.2);
-            border: 2px solid var(--primary-cian);
-            padding: 15px;
+        .avatar-box {
+            width: 75px;
+            height: 75px;
             border-radius: 50%;
-            transition: 0.3s;
+            border: 1px solid var(--border-color);
+            background: #f1f5f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: 0.2s ease;
+        }
+
+        .avatar-box i {
+            font-size: 30px;
+            color: #94a3b8;
+            transition: 0.2s ease;
+        }
+
+        .avatar-box:hover {
+            transform: translateY(-2px);
+            border-color: #cbd5e1;
+            background: #e2e8f0;
+        }
+
+        .avatar-box:hover i {
+            color: var(--primary-blue);
         }
 
         .input-group {
             position: relative;
-            margin-bottom: 20px;
+            margin-bottom: 22px;
         }
 
-        .input-group i {
+        .input-group i.input-icon {
             position: absolute;
-            left: 15px;
+            left: 16px;
             top: 50%;
             transform: translateY(-50%);
-            color: var(--primary-cian);
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            z-index: 2;
+            pointer-events: none;
         }
 
-        .input-group input, .input-group select {
+        /* Inputs Claros Estilo Moderno */
+        .input-group input {
             width: 100%;
-            padding: 12px 15px 12px 45px;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            color: white;
+            padding: 13px 15px 13px 48px;
+            background: #f8fafc !important;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-dark) !important;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
             outline: none;
             box-sizing: border-box;
-            transition: 0.3s;
+            transition: 0.2s ease;
         }
 
-        .input-group input:focus, .input-group select:focus {
-            border-color: var(--primary-cian);
-            box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);
+        /* Compatibilidad de autocompletado en navegadores */
+        .input-group input:-webkit-autofill {
+            -webkit-text-fill-color: var(--text-dark) !important;
+            -webkit-box-shadow: 0 0 0px 1000px #f8fafc inset !important;
+            transition: background-color 5000s ease-in-out 0s;
         }
 
+        .input-group input:focus {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
+            background: #ffffff !important;
+        }
+
+        /* Botón Azul Reactivo */
         .btn-login {
             width: 100%;
-            padding: 12px;
-            background: linear-gradient(45deg, #0072ff, #00f2ff);
+            padding: 13px;
+            background: var(--primary-blue);
             border: none;
-            border-radius: 10px;
+            border-radius: 8px;
             color: white;
             font-weight: 600;
             cursor: pointer;
             text-transform: uppercase;
-            transition: 0.3s;
-            box-shadow: 0 4px 15px rgba(0, 242, 255, 0.3);
+            transition: 0.2s ease;
+            box-shadow: 0 4px 6px -1px rgba(2, 132, 199, 0.1), 0 2px 4px -1px rgba(2, 132, 199, 0.06);
+            letter-spacing: 0.5px;
+            margin-top: 5px;
+            font-size: 0.9rem;
         }
 
         .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 242, 255, 0.5);
+            background: var(--primary-hover);
+            box-shadow: 0 10px 15px -3px rgba(2, 132, 199, 0.25);
+        }
+
+        /* Alerta de Error */
+        .error-message {
+            background-color: #fee2e2;
+            border: 1px solid #fca5a5;
+            color: #991b1b;
+            padding: 11px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 500;
         }
 
         .footer-text {
-            margin-top: 25px;
+            margin-top: 30px;
             font-size: 0.8rem;
-            color: #666;
-        }
-
-        /* Estilo para el select */
-        select option {
-            background: #1a2a44;
-            color: white;
+            color: #94a3b8;
+            font-weight: 500;
         }
     </style>
 </head>
@@ -150,34 +248,28 @@
     </div>
 
     <div class="avatar-group">
-        <i class="fa-solid fa-user-tie"></i>
-       <i class="fa-solid fa-user-gear"></i>
+        <div class="avatar-box">
+            <i class="fa-solid fa-user-tie"></i>
+        </div>
+        <div class="avatar-box">
+            <i class="fa-solid fa-user-gear"></i> 
+        </div>
     </div>
 
-    <form action="login_process.php" method="POST">
+    <?php if (!empty($error)): ?>
+        <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
+    <?php endif; ?>
+
+    <form action="" method="POST" id="loginForm" autocomplete="off">
+        
         <div class="input-group">
-            <i class="fa-solid fa-id-card"></i>
-            <input type="text" name="nomina" placeholder="Usuario / Nómina" required>
+            <i class="fa-solid fa-id-card input-icon"></i>
+            <input type="text" name="nomina" id="inputNomina" placeholder="Usuario / Nómina" required autocomplete="new-password">
         </div>
 
         <div class="input-group">
-            <i class="fa-solid fa-lock"></i>
-            <input type="password" name="password" placeholder="Contraseña" required>
-        </div>
-
-        <div class="input-group">
-            <i class="fa-solid fa-building"></i>
-            <select name="ubicacion" required>
-                <option value="" disabled selected>Seleccione Empresa y Área</option>
-                <optgroup label="Empresa Alpha">
-                    <option value="alpha_calidad">Alpha - Calidad</option>
-                    <option value="alpha_prod">Alpha - Producción</option>
-                </optgroup>
-                <optgroup label="Empresa Beta">
-                    <option value="beta_admin">Beta - Administración</option>
-                    <option value="beta_log">Beta - Logística</option>
-                </optgroup>
-            </select>
+            <i class="fa-solid fa-lock input-icon"></i>
+            <input type="password" name="password" id="inputPassword" placeholder="Contraseña" required autocomplete="new-password">
         </div>
 
         <button type="submit" class="btn-login">Ingresar al Portal</button>
@@ -187,6 +279,20 @@
         © 2026 QualityHub Document System
     </div>
 </div>
+
+<script>
+    window.addEventListener('DOMContentLoaded', () => {
+        const formulario = document.getElementById('loginForm');
+        if (formulario) {
+            formulario.reset();
+        }
+
+        setTimeout(() => {
+            document.getElementById('inputNomina').value = '';
+            document.getElementById('inputPassword').value = '';
+        }, 50); 
+    });
+</script>
 
 </body>
 </html>
