@@ -33,13 +33,21 @@ services:
 
   # Base de Datos para Fernanda (Python/Mongo)
   mongodb:
-    image: mongo:latest
+    image: mongo:7
     container_name: mongodb_container
     restart: always
     ports:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+      # Script de inicialización automática: crea usuarios al primer arranque
+      - ./docker/python/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     networks:
       - app-network
 
@@ -70,7 +78,8 @@ services:
     ports:
       - "8082:5000"
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     networks:
       - app-network
       
