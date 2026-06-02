@@ -3,271 +3,352 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QualityHub - Elite Document Management System</title>
+    <title>QualityHub - Sistema de Control y Distribución Documental</title>
     
+    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome 6 -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts - Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
-        /* --- CORE SYSTEM VARIABLES (Paleta Azul Premium Neón) --- */
+        /* --- PALETA DE COLORES (Azul Fuerte Premium) --- */
         :root {
-            --bg-body: #f1f5f9;
-            --bg-card: rgba(255, 255, 255, 0.9);
-            --text-main: #0f172a;
+            --sidebar-bg: linear-gradient(180deg, #0b1e47 0%, #112d6c 100%);
+            --bg-body: #f4f6f9;
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
             --text-muted: #64748b;
-            --primary: #1e40af;
-            --primary-gradient: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-            --accent: #3b82f6;
+            --primary-accent: #2563eb;
+            --accent-glow: rgba(37, 99, 235, 0.1);
             --border-color: #e2e8f0;
-            --input-bg: #ffffff;
-            --card-glow: rgba(30, 64, 175, 0.05);
-            --transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            --input-bg: #f8fafc;
+            --transition-smooth: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
         }
 
         [data-theme="dark"] {
-            --bg-body: #080c14;
-            --bg-card: rgba(21, 31, 50, 0.85);
+            --sidebar-bg: linear-gradient(180deg, #060b13 0%, #0c1524 100%);
+            --bg-body: #090e17;
+            --bg-card: #121b2d;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
-            --primary: #3b82f6;
-            --primary-gradient: linear-gradient(135deg, #1d4ed8 0%, #10b981 100%);
-            --accent: #10b981;
+            --primary-accent: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.15);
             --border-color: #1e293b;
-            --input-bg: #111827;
-            --card-glow: rgba(59, 130, 246, 0.15);
+            --input-bg: #0f172a;
         }
 
-        /* --- CONFIGURACIÓN BASE --- */
         body {
             background-color: var(--bg-body);
             color: var(--text-main);
             font-family: 'Inter', sans-serif;
             min-height: 100vh;
-            transition: var(--transition);
-            overflow-x: hidden;
+            transition: var(--transition-smooth);
         }
 
-        /* --- INTERRUPTOR DE TEMA TIPO COMPONENT --- */
-        .theme-switch-wrapper {
+        /* --- INTERRUPTOR DE TEMA --- */
+        .theme-switch-container {
             position: fixed;
-            top: 25px;
+            top: 20px;
             right: 25px;
-            z-index: 1050;
+            z-index: 1060;
         }
-        .btn-theme {
+        .btn-theme-toggle {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             color: var(--text-main);
-            padding: 12px;
+            padding: 10px 14px;
             border-radius: 50%;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-            transition: var(--transition);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: var(--transition-smooth);
         }
-        .btn-theme:hover {
-            transform: scale(1.1) rotate(20deg);
-            border-color: var(--accent);
-            box-shadow: 0 0 15px var(--card-glow);
+        .btn-theme-toggle:hover {
+            transform: scale(1.1) rotate(15deg);
         }
 
-        /* --- ANIMACIONES DE ENTRADA CINEMÁTICA --- */
-        @keyframes launchIntro {
-            from { opacity: 0; transform: translateY(30px) scale(0.98); filter: blur(5px); }
-            to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+        /* --- ANIMACIÓN DE ENTRADA SUAVE --- */
+        @keyframes slideUpFade {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        .animated-gate {
-            animation: launchIntro 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        .animated-layout {
+            animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        /* --- LOGIN FUTURISTA --- */
-        .login-container {
+        /* --- LOGIN --- */
+        .login-wrapper {
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 20px;
         }
-        .login-glass-card {
+        .login-card-premium {
             background: var(--bg-card);
-            backdrop-filter: blur(12px);
             border: 1px solid var(--border-color);
-            border-radius: 24px;
-            padding: 45px;
+            border-radius: 20px;
+            padding: 40px;
             width: 100%;
-            max-width: 450px;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.1), var(--card-glow);
+            max-width: 440px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.06);
             position: relative;
         }
-        .login-glass-card::after {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 6px;
-            background: var(--primary-gradient); border-radius: 24px 24px 0 0;
+        .login-card-premium::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 5px;
+            background: var(--sidebar-bg); border-radius: 20px 20px 0 0;
         }
-        .brand-sphere {
-            width: 80px; height: 80px; background: var(--primary-gradient);
-            border-radius: 20px; display: flex; align-items: center; justify-content: center;
-            margin: 0 auto 20px auto; color: white; font-size: 32px;
-            box-shadow: 0 15px 30px rgba(30, 64, 175, 0.3);
+        .login-brand-icon {
+            width: 70px; height: 70px; background: var(--sidebar-bg);
+            border-radius: 16px; display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 20px auto; color: white; font-size: 28px;
         }
 
-        /* --- DISEÑO COMPONENTES FORMULARIO --- */
-        .form-label-custom {
-            font-size: 11px; font-weight: 700; color: var(--accent);
-            text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 8px;
+        /* INPUTS */
+        .custom-label-spec {
+            font-size: 13px; font-weight: 700; color: var(--primary-accent);
+            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;
+            display: block;
         }
-        .form-control-custom {
+        .custom-input-spec {
             background-color: var(--input-bg) !important;
             border: 1px solid var(--border-color) !important;
             color: var(--text-main) !important;
-            border-radius: 12px; padding: 12px 16px;
-            font-weight: 500; transition: var(--transition);
+            border-radius: 10px; padding: 11px 14px;
+            font-weight: 500; transition: var(--transition-smooth);
         }
-        .form-control-custom:focus {
-            box-shadow: 0 0 0 4px var(--card-glow) !important;
-            border-color: var(--primary) !important;
+        .custom-input-spec:focus {
+            box-shadow: 0 0 0 4px var(--accent-glow) !important;
+            border-color: var(--primary-accent) !important;
         }
 
-        .btn-submit-premium {
-            background: var(--primary-gradient); color: white !important;
-            border: none; border-radius: 12px; padding: 14px;
-            font-weight: 700; font-size: 15px; letter-spacing: 0.5px;
-            transition: var(--transition); box-shadow: 0 10px 20px rgba(30, 64, 175, 0.2);
+        .btn-action-primary {
+            background: var(--sidebar-bg); color: white !important;
+            border: none; border-radius: 10px; padding: 12px;
+            font-weight: 600; font-size: 14px; transition: var(--transition-smooth);
         }
-        .btn-submit-premium:hover {
-            transform: translateY(-3px); box-shadow: 0 15px 30px rgba(30, 64, 175, 0.35);
+        .btn-action-primary:hover {
+            transform: translateY(-2px);
             opacity: 0.95;
         }
 
-        /* --- DASHBOARD CENTRAL (DOS COLUMNAS) --- */
-        #main-view { display: none; padding: 40px 20px; }
+        /* --- ESTRUCTURA PRINCIPAL (SIDEBAR + CONTENT) --- */
+        #main-view { display: none; }
+        .wrapper-layout { display: flex; min-height: 100vh; }
+
+        .sidebar-corporate {
+            width: 340px; background: var(--sidebar-bg); padding: 30px 24px;
+            color: white; display: flex; flex-direction: column; flex-shrink: 0;
+            box-shadow: 4px 0 25px rgba(0,0,0,0.05);
+        }
+        .sidebar-brand-title {
+            font-size: 24px; font-weight: 800; letter-spacing: -0.5px;
+            display: flex; align-items: center; gap: 12px; margin-bottom: 35px;
+        }
+        .sidebar-brand-title i { color: #3b82f6; }
         
-        .glass-sidebar {
-            background: var(--bg-card); border: 1px solid var(--border-color);
-            border-radius: 20px; padding: 30px; box-shadow: 0 15px 35px rgba(0,0,0,0.03);
-            position: sticky; top: 40px; backdrop-filter: blur(10px);
+        .sidebar-filters-box {
+            background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 16px; padding: 20px; margin-top: 10px;
         }
+        .sidebar-filters-box .custom-label-spec { 
+            color: #ffffff !important; 
+            font-size: 13px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        .sidebar-filters-box .custom-input-spec {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            border: 1px solid rgba(255, 255, 255, 0.25) !important; 
+            color: #ffffff !important;
+            font-size: 14px;
+        }
+        .sidebar-filters-box .custom-input-spec::placeholder {
+            color: rgba(255, 255, 255, 0.6) !important;
+        }
+        .sidebar-filters-box select option {
+            background-color: #0b1e47;
+            color: #ffffff;
+        }
+
+        .main-content-panel {
+            flex-grow: 1; padding: 40px 35px; background-color: var(--bg-body);
+            overflow-y: auto;
+        }
+
+        .top-meta-banner {
+            background: var(--bg-card); 
+            border: 1px solid var(--border-color);
+            padding: 16px 25px; 
+            border-radius: 14px; 
+            margin-bottom: 35px;
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            font-size: 14px;
+            color: var(--text-main) !important;
+        }
+        .top-meta-banner span, .top-meta-banner strong {
+            color: var(--text-main) !important;
+        }
+
+        /* --- TARJETAS KPI --- */
+        .kpi-card-spec {
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: 16px; padding: 24px; display: flex; align-items: center;
+            justify-content: space-between; box-shadow: 0 4px 12px rgba(0,0,0,0.01);
+            transition: var(--transition-smooth);
+        }
+        .kpi-card-spec:hover {
+            transform: translateY(-4px); border-color: var(--primary-accent);
+        }
+        .kpi-title-text { font-size: 13px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .kpi-value-num { font-size: 28px; font-weight: 800; color: var(--text-main); margin-top: 4px; display: block; }
+        .kpi-icon-wrapper {
+            width: 48px; height: 48px; border-radius: 12px; display: flex;
+            align-items: center; justify-content: center; font-size: 20px;
+        }
+
+        /* --- TABLA --- */
+        .data-table-container {
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: 16px; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.01);
+        }
+        .table-custom-spec { 
+            margin: 0; 
+            width: 100%; 
+            background: transparent !important;
+            color: var(--text-main) !important;
+        }
+        .table-custom-spec th {
+            background: transparent !important; 
+            color: var(--text-muted) !important; 
+            font-size: 14px; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            letter-spacing: 1px;
+            padding: 18px 20px; 
+            border-bottom: 2px solid var(--border-color) !important;
+        }
+        .table-custom-spec tbody tr { 
+            background: transparent !important;
+            transition: var(--transition-smooth); 
+        }
+        .table-custom-spec tbody tr:hover { 
+            background-color: var(--input-bg) !important; 
+        }
+        .table-custom-spec td {
+            padding: 20px 20px; 
+            vertical-align: middle; 
+            border-bottom: 1px solid var(--border-color) !important;
+            background: transparent !important;
+            color: var(--text-main) !important;
+            font-size: 15px; 
+        }
+
+        /* BADGES */
+        .doc-extension-badge {
+            font-weight: 700; padding: 6px 12px; border-radius: 8px; font-size: 12px;
+            display: inline-flex; align-items: center; gap: 6px; min-width: 85px; justify-content: center;
+        }
+        .ext-pdf { background: #fee2e2; color: #dc2626; }
+        .ext-word { background: #e0f2fe; color: #0369a1; }
+        .ext-excel { background: #dcfce7; color: #15803d; }
+        .ext-power { background: #ffedd5; color: #c2410c; }
         
-        .glass-main-card {
-            background: var(--bg-card); border: 1px solid var(--border-color);
-            border-radius: 20px; padding: 35px; box-shadow: 0 15px 35px rgba(0,0,0,0.03);
-            backdrop-filter: blur(10px);
+        .status-pill-spec {
+            padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700;
+            text-transform: uppercase; display: inline-block;
         }
+        .pill-auth { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+        .pill-rev { background: #fff8e1; color: #f57f17; border: 1px solid #ffe082; }
 
-        /* Banner Informativo */
-        .top-status-bar {
-            background: var(--primary-gradient); color: white;
-            padding: 16px 30px; border-radius: 16px; margin-bottom: 30px;
-            display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 12px 25px rgba(30, 64, 175, 0.15);
-        }
-
-        /* Kpi Mini Cards */
-        .kpi-mini-card {
-            background: var(--bg-body); border: 1px solid var(--border-color);
-            border-radius: 14px; padding: 15px 20px; display: flex; align-items: center;
-            gap: 15px; transition: var(--transition);
-        }
-        .kpi-mini-card:hover { transform: translateY(-3px); border-color: var(--accent); }
-        .kpi-icon {
-            width: 45px; height: 45px; border-radius: 10px; display: flex;
-            align-items: center; justify-content: center; font-size: 18px; color: white;
-        }
-
-        /* --- ACCIONES CON DISEÑO DE BOTÓN DE ACCIÓN FLUIDO --- */
-        .actions-wrapper { display: flex; gap: 10px; justify-content: center; }
-        .action-pill {
-            padding: 10px 18px; border-radius: 12px; font-size: 13px; font-weight: 700;
-            border: none; transition: var(--transition); display: inline-flex; align-items: center; gap: 8px;
+        /* ACCIONES */
+        .actions-btn-group { display: flex; gap: 10px; justify-content: center; }
+        .btn-action-pill {
+            padding: 10px 18px; border-radius: 10px; font-size: 14px; font-weight: 700;
+            border: none; transition: var(--transition-smooth); display: inline-flex; align-items: center; gap: 6px;
             text-decoration: none !important;
         }
-        
-        .pill-view { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-        .pill-view:hover { background: #10b981; color: white; transform: translateY(-3px); box-shadow: 0 8px 15px rgba(16, 185, 129, 0.2); }
-        
-        .pill-info { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
-        .pill-info:hover { background: #3b82f6; color: white; transform: translateY(-3px); box-shadow: 0 8px 15px rgba(59, 130, 246, 0.2); }
-        
-        .pill-download { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
-        .pill-download:hover { background: #8b5cf6; color: white; transform: translateY(-3px); box-shadow: 0 8px 15px rgba(139, 92, 246, 0.2); }
+        .act-view { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+        .act-view:hover { background: #10b981; color: white; transform: translateY(-2px); }
+        .act-info { background: rgba(37, 99, 235, 0.12); color: #2563eb; }
+        .act-info:hover { background: #2563eb; color: white; transform: translateY(-2px); }
+        .act-download { background: rgba(139, 92, 246, 0.12); color: #8b5cf6; }
+        .act-download:hover { background: #8b5cf6; color: white; transform: translateY(-2px); }
 
-        /* --- FILAS DE TABLA PREMIUM --- */
-        .table-premium { margin: 0; width: 100%; }
-        .table-premium th {
-            background: transparent; color: var(--text-muted); font-size: 11px;
-            font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
-            padding: 18px 24px; border-bottom: 2px solid var(--border-color);
-        }
-        .table-premium td {
-            padding: 22px 24px; vertical-align: middle; border-bottom: 1px solid var(--border-color);
-        }
-        .table-premium tr { transition: var(--transition); }
-        .table-premium tbody tr:hover {
-            background-color: var(--primary-light);
-            transform: scale(1.002);
+        .modal-premium-content {
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: 20px; padding: 15px;
         }
 
-        /* --- FILE ICONS ENHANCED --- */
-        .corporate-file-badge {
-            font-weight: 800; padding: 8px 14px; border-radius: 10px; font-size: 11px;
-            letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 6px;
-            min-width: 85px; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        /* --- ESTILOS DE PAGINACIÓN PREMIUM --- */
+        .pagination .page-link {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 8px 14px;
+            font-weight: 700;
+            border-radius: 8px;
+            margin: 0 3px;
+            transition: var(--transition-smooth);
         }
-        .badge-pdf { background: #fee2e2; color: #dc2626; }
-        .badge-word { background: #e0f2fe; color: #0369a1; }
-        .badge-excel { background: #dcfce7; color: #15803d; }
-        .badge-power { background: #ffedd5; color: #c2410c; }
-        
-        /* Badges de Estado */
-        .status-pill {
-            padding: 6px 14px; border-radius: 30px; font-size: 11px; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 0.5px; display: inline-block;
+        .pagination .page-link:hover {
+            background-color: var(--primary-accent);
+            color: white !important;
+            border-color: var(--primary-accent);
+            transform: translateY(-1px);
         }
-        .status-pill-auth { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
-        .status-pill-rev { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
-
-        /* --- MODAL CRISTALIZADO --- */
-        .modal-content-custom {
-            background: var(--bg-card); backdrop-filter: blur(15px);
-            border: 1px solid var(--border-color); border-radius: 24px;
-            padding: 20px; box-shadow: var(--shadow);
+        .pagination .page-item.active .page-link {
+            background-color: var(--primary-accent);
+            border-color: var(--primary-accent);
+            color: white !important;
+            box-shadow: 0 4px 10px var(--accent-glow);
+        }
+        .pagination .page-item.disabled .page-link {
+            background-color: var(--input-bg);
+            color: var(--text-muted);
+            opacity: 0.5;
+            pointer-events: none;
         }
     </style>
 </head>
 <body>
 
-    <div class="theme-switch-wrapper">
-        <button class="btn btn-theme" onclick="toggleTheme()">
+    <div class="theme-switch-container">
+        <button class="btn btn-theme-toggle" onclick="toggleTheme()">
             <i id="theme-icon" class="fa-solid fa-moon"></i>
         </button>
     </div>
 
-    <div id="login-view" class="login-container">
-        <div class="login-glass-card animated-gate">
-            <div class="brand-sphere">
+    <!-- PANTALLA LOGIN -->
+    <div id="login-view" class="login-wrapper">
+        <div class="login-card-premium animated-layout">
+            <div class="login-brand-icon">
                 <i class="fa-solid fa-shield-halved"></i>
             </div>
-            <h2>QualityHub</h2>
-            <p class="subtitle">Ecosistema Seguro de Distribución</p>
+            <h3 class="text-center fw-800 mb-1">QualityHub</h3>
+            <p class="text-center text-muted small mb-4">Ingreso Seguro al Control Operativo</p>
             
             <div class="mb-3">
-                <label class="form-label-custom">Nombre de Usuario</label>
-                <input type="text" id="username" class="form-control form-control-custom" value="fer_admin">
+                <label class="custom-label-spec">Identificador de Usuario</label>
+                <input type="text" id="username" class="form-control custom-input-spec" value="fer_admin">
             </div>
             <div class="mb-4">
-                <label class="form-label-custom">Contraseña Corporativa</label>
-                <input type="password" id="password" class="form-control form-control-custom" value="12345">
+                <label class="custom-label-spec">Clave de Acceso</label>
+                <input type="password" id="password" class="form-control custom-input-spec" value="12345">
             </div>
 
-            <div class="row mb-3">
+            <div class="row g-2 mb-4">
                 <div class="col-6">
-                    <label class="form-label-custom">Compañía</label>
-                    <select id="login-compania" class="form-select form-control-custom">
+                    <label class="custom-label-spec">Entidad / Compañía</label>
+                    <select id="login-compania" class="form-select custom-input-spec">
                         <option value="Compania_A">Compañía A</option>
                         <option value="Compania_B">Compañía B</option>
                     </select>
                 </div>
                 <div class="col-6">
-                    <label class="form-label-custom">Departamento</label>
-                    <select id="login-departamento" class="form-select form-control-custom">
+                    <label class="custom-label-spec">Área / Depto</label>
+                    <select id="login-departamento" class="form-select custom-input-spec">
                         <option value="Calidad">Calidad</option>
                         <option value="Auditoría">Auditoría</option>
                         <option value="Mantenimiento">Mantenimiento</option>
@@ -275,176 +356,203 @@
                 </div>
             </div>
 
-            <button class="btn btn-submit-premium w-100 mt-3" onclick="procesarLogin()">
-                Aceder al Ecosistema <i class="fa-solid fa-arrow-right ms-2"></i>
+            <button class="btn btn-action-primary w-100" onclick="procesarLogin()">
+                Ingresar al Sistema <i class="fa-solid fa-right-to-bracket ms-2"></i>
             </button>
         </div>
     </div>
 
-    <div id="main-view" class="container-fluid animated-gate">
+    <!-- PANEL PRINCIPAL -->
+    <div id="main-view" class="wrapper-layout animated-layout">
         
-        <div id="user-banner" class="top-status-bar"></div>
-
-        <div class="row g-4">
+        <aside class="sidebar-corporate">
+            <div class="sidebar-brand-title">
+                <i class="fa-solid fa-shield-halved fs-3"></i>
+                <span>QualityHub</span>
+            </div>
             
-            <div class="col-lg-3">
-                <div class="glass-sidebar">
-                    <h5 class="fw-800 mb-4" style="letter-spacing:-0.5px;"><i class="fa-solid fa-sliders me-2 text-primary"></i>Filtros Avanzados</h5>
-                    
-                    <div class="mb-3">
-                        <label class="form-label-custom">Palabra Clave</label>
-                        <div class="input-group">
-                            <input type="text" id="search-name" class="form-control form-control-custom" placeholder="Buscar documento...">
+            <p class="custom-label-spec text-white mb-2" style="font-size:14px; font-weight:800;">Búsqueda y Filtros</p>
+            <div class="sidebar-filters-box">
+                <div class="mb-3">
+                    <label class="custom-label-spec">Buscar Documento / Metadatos</label>
+                    <input type="text" id="search-name" class="form-control custom-input-spec" placeholder="Código, nombre, autor, versión...">
+                </div>
+                <div class="mb-3">
+                    <label class="custom-label-spec">Formato Técnico</label>
+                    <select id="search-type" class="form-select custom-input-spec">
+                        <option value="Todos">Todos los formatos</option>
+                        <option value="PDF">PDF</option>
+                        <option value="PowerPoint">PowerPoint</option>
+                        <option value="Excel">Excel</option>
+                        <option value="Word">Word</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="custom-label-spec">Fecha de Registro</label>
+                    <input type="date" id="search-date" class="form-control custom-input-spec">
+                </div>
+                <button class="btn btn-primary btn-action-primary w-100" style="background:#2563eb; font-weight:700;" onclick="cargarDocumentos(1)">
+                    <i class="fa-solid fa-magnifying-glass me-2"></i> Filtrar Base
+                </button>
+            </div>
+            
+            <div class="mt-auto pt-3 border-top border-secondary text-center text-white-50 small">
+                Sistema de Control Estándar v2.4
+            </div>
+        </aside>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <main class="main-content-panel">
+            
+            <div id="user-banner" class="top-meta-banner fw-600"></div>
+
+            <!-- TARJETAS -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-4">
+                    <div class="kpi-card-spec">
+                        <div>
+                            <span class="kpi-title-text">Ecosistema General</span>
+                            <span class="kpi-value-num" id="kpi-totales">0</span>
+                        </div>
+                        <div class="kpi-icon-wrapper" style="background: rgba(37, 99, 235, 0.1); color: #2563eb;">
+                            <i class="fa-solid fa-folder-tree"></i>
                         </div>
                     </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label-custom">Formato de Extensión</label>
-                        <select id="search-type" class="form-select form-control-custom">
-                            <option value="Todos">Todos los Formatos</option>
-                            <option value="PDF">Documento PDF</option>
-                            <option value="PowerPoint">Presentación PowerPoint</option>
-                            <option value="Excel">Hoja Excel</option>
-                            <option value="Word">Plantilla Word</option>
-                        </select>
+                </div>
+                <div class="col-md-4">
+                    <div class="kpi-card-spec">
+                        <div>
+                            <span class="kpi-title-text">Acceso Liberado</span>
+                            <span class="kpi-value-num text-success" id="kpi-autorizados">0</span>
+                        </div>
+                        <div class="kpi-icon-wrapper" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
+                            <i class="fa-solid fa-circle-check"></i>
+                        </div>
                     </div>
-                    
-                    <div class="mb-4">
-                        <label class="form-label-custom">Fecha de Emisión</label>
-                        <input type="date" id="search-date" class="form-control form-control-custom">
+                </div>
+                <div class="col-md-4">
+                    <div class="kpi-card-spec">
+                        <div>
+                            <span class="kpi-title-text">Fase de Validación</span>
+                            <span class="kpi-value-num text-warning" id="kpi-revision">0</span>
+                        </div>
+                        <div class="kpi-icon-wrapper" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                        </div>
                     </div>
-
-                    <button class="btn btn-submit-premium w-100" onclick="cargarDocumentos()">
-                        <i class="fa-solid fa-magnifying-glass me-2"></i> Ejecutar Filtro
-                    </button>
                 </div>
             </div>
 
-            <div class="col-lg-9">
-                
-                <div class="row g-3 mb-4">
-                    <div class="col-md-4">
-                        <div class="kpi-mini-card">
-                            <div class="kpi-icon" style="background:#3b82f6;"><i class="fa-solid fa-folder-open"></i></div>
-                            <div>
-                                <small class="text-muted d-block font-weight-bold">Ecosistema</small>
-                                <span class="fw-bold">Documentos Totales</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="kpi-mini-card">
-                            <div class="kpi-icon" style="background:#10b981;"><i class="fa-solid fa-circle-check"></i></div>
-                            <div>
-                                <small class="text-muted d-block">Estado Favorable</small>
-                                <span class="fw-bold text-success">Autorizados</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="kpi-mini-card">
-                            <div class="kpi-icon" style="background:#f59e0b;"><i class="fa-solid fa-clock"></i></div>
-                            <div>
-                                <small class="text-muted d-block">Fase de Validación</small>
-                                <span class="fw-bold text-warning">En Revisión</span>
-                            </div>
-                        </div>
-                    </div>
+            <!-- TABLA -->
+            <div class="data-table-container">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="fw-800 m-0" style="letter-spacing: -0.5px; font-size:20px;">Panel de Distribución Documental</h4>
+                    <span class="badge bg-light text-secondary border px-3 py-2 rounded-pill fw-bold" style="font-size:13px;">ISO Compliant</span>
                 </div>
 
-                <div class="glass-main-card">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h4 class="fw-800 m-0" style="letter-spacing:-0.5px;">Control de Distribución y Versiones</h4>
-                        <span class="badge bg-light text-dark border py-2 px-3 rounded-pill fw-bold" style="font-size:12px;">ISO 9001:2015</span>
-                    </div>
-
-                    <div class="table-responsive">
-                        <table class="table table-premium">
-                            <thead>
-                                <tr>
-                                    <th style="width: 45%;">Estructura del Documento</th>
-                                    <th style="width: 15%; text-align: center;">Registro</th>
-                                    <th style="width: 15%; text-align: center;">Validación</th>
-                                    <th style="width: 25%; text-align: center;">Operaciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="document-rows">
-                                </tbody>
-                        </table>
-                    </div>
+                <div class="table-responsive">
+                    <table class="table table-custom-spec">
+                        <thead>
+                            <tr>
+                                <th style="width: 45%;">Nombre del Documento</th>
+                                <th style="width: 15%; text-align: center;">Alta Sistema</th>
+                                <th style="width: 15%; text-align: center;">Estatus</th>
+                                <th style="width: 25%; text-align: center;">Acciones Operativas</th>
+                            </tr>
+                        </thead>
+                        <tbody id="document-rows">
+                            <!-- Inyección Dinámica mediante Javascript -->
+                        </tbody>
+                    </table>
                 </div>
 
+                <!-- CONTROLES DE PAGINACIÓN PREMIUM -->
+                <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2">
+                    <div id="pagination-info" class="small text-muted fw-600">Mostrando registros...</div>
+                    <nav aria-label="Navegación de documentos">
+                        <ul id="pagination-list" class="pagination pagination-sm m-0">
+                            <!-- Inyección dinámica de botones de página -->
+                        </ul>
+                    </nav>
+                </div>
             </div>
-        </div>
+        </main>
     </div>
 
+    <!-- MODAL DE CONSULTA DE METADATOS (SOLO LECTURA) -->
     <div class="modal fade" id="metadataBootstrapModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content modal-content-custom">
+            <div class="modal-content modal-premium-content">
                 <div class="modal-header border-0 pb-0">
-                    <h5 class="fw-800"><i class="fa-solid fa-circle-info text-primary me-2"></i>Metadatos y Auditoría</h5>
+                    <h5 class="fw-800" style="font-size:18px;"><i class="fa-solid fa-file-invoice text-primary me-2"></i>Consulta de Metadatos</h5>
                     <button type="button" class="btn-close" onclick="cerrarModal()"></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="modal-archivo-origen">
                     
                     <div class="mb-2">
-                        <label class="form-label-custom">Código Documental</label>
-                        <input type="text" id="modal-codigo-doc" class="form-control form-control-custom" readonly style="opacity:0.6;">
+                        <label class="custom-label-spec">Código Interno (ISO)</label>
+                        <input type="text" id="modal-codigo-doc" class="form-control custom-input-spec" readonly style="opacity:0.75;">
                     </div>
                     <div class="mb-2">
-                        <label class="form-label-custom">Nombre del Registro</label>
-                        <input type="text" id="modal-nombre" class="form-control form-control-custom">
+                        <label class="custom-label-spec">Identificador del Documento</label>
+                        <input type="text" id="modal-nombre" class="form-control custom-input-spec" readonly style="opacity:0.75;">
                     </div>
                     <div class="row mb-2">
                         <div class="col-6">
-                            <label class="form-label-custom">Versión</label>
-                            <input type="text" id="modal-version" class="form-control form-control-custom">
+                            <label class="custom-label-spec">Edición / Versión</label>
+                            <input type="text" id="modal-version" class="form-control custom-input-spec" readonly style="opacity:0.75;">
                         </div>
                         <div class="col-6">
-                            <label class="form-label-custom">Peso del Archivo</label>
-                            <input type="text" id="modal-tamano" class="form-control form-control-custom" readonly style="opacity:0.6;">
+                            <label class="custom-label-spec">Tamaño Físico</label>
+                            <input type="text" id="modal-tamano" class="form-control custom-input-spec" readonly style="opacity:0.75;">
                         </div>
                     </div>
                     <div class="mb-2">
-                        <label class="form-label-custom">Autor de Subida</label>
-                        <input type="text" id="modal-autor" class="form-control form-control-custom" readonly style="opacity:0.6;">
+                        <label class="custom-label-spec">Responsable de Carga</label>
+                        <input type="text" id="modal-autor" class="form-control custom-input-spec" readonly style="opacity:0.75;">
                     </div>
                     <div class="row mb-2">
                         <div class="col-6">
-                            <label class="form-label-custom">Compañía Destino</label>
-                            <input type="text" id="modal-compania" class="form-control form-control-custom">
+                            <label class="custom-label-spec">Compañía Destinataria</label>
+                            <input type="text" id="modal-compania" class="form-control custom-input-spec" readonly style="opacity:0.75;">
                         </div>
                         <div class="col-6">
-                            <label class="form-label-custom">Departamento</label>
-                            <input type="text" id="modal-departamento" class="form-control form-control-custom">
+                            <label class="custom-label-spec">Departamento Destinatario</label>
+                            <input type="text" id="modal-departamento" class="form-control custom-input-spec" readonly style="opacity:0.75;">
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label-custom">Clasificación de Seguridad</label>
-                        <input type="text" id="modal-clasificacion" class="form-control form-control-custom">
+                        <label class="custom-label-spec">Nivel de Seguridad</label>
+                        <input type="text" id="modal-clasificacion" class="form-control custom-input-spec" readonly style="opacity:0.75;">
                     </div>
                     <div>
-                        <label class="form-label-custom">Estado de Autorización</label>
-                        <select id="modal-autorizado" class="form-select form-control-custom" disabled style="opacity:0.6; font-weight:700;">
+                        <label class="custom-label-spec">Estatus de Validación</label>
+                        <select id="modal-autorizado" class="form-select custom-input-spec" disabled style="opacity:0.75; font-weight:700;">
                             <option value="Autorizado">Autorizado</option>
                             <option value="En Revisión (No)">En Revisión (No)</option>
                         </select>
                     </div>
                 </div>
                 <div class="modal-footer border-0 pt-0">
-                    <button type="button" class="btn btn-secondary px-4" style="border-radius:10px;" onclick="cerrarModal()">Cerrar</button>
-                    <button type="button" class="btn btn-success px-4" style="border-radius:10px;" onclick="guardarCambiosMetadatos()">💾 Guardar Cambios</button>
+                    <button type="button" class="btn btn-secondary px-4 w-100" style="border-radius:9px; font-size:14px; font-weight:600;" onclick="cerrarModal()">Cerrar Ventana</button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Bootstrap 5 Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
+    <!-- LOGICA DE NEGOCIO -->
     <script>
         let datosUsuario = null;
         let bsModalInstance = null;
+        
+        // Parámetros de paginación del frontend
+        let paginaActual = 1;
+        let totalPaginas = 1;
+        const porPagina = 5;
 
         function toggleTheme() {
             const currentTheme = document.documentElement.getAttribute('data-theme');
@@ -462,125 +570,170 @@
             const u = document.getElementById('username').value;
             const p = document.getElementById('password').value;
             const companiaSeleccionada = document.getElementById('login-compania').value;
-            const deptoSeleccionado = document.getElementById('login-departamento').value;
+            const deptoSeleccionada = document.getElementById('login-departamento').value;
 
+            // Enviamos usuario, clave, compañía y departamento para la validación cruzada estricta
             const res = await fetch('/api/login', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ usuario: u, contrasena: p })
+                body: JSON.stringify({ 
+                    usuario: u, 
+                    contrasena: p,
+                    compania: companiaSeleccionada,
+                    departamento: deptoSeleccionada
+                })
             });
 
             const data = await res.json();
             if (res.ok) {
                 datosUsuario = {
                     usuario: data.usuario,
-                    compania: companiaSeleccionada,
-                    departamento: deptoSeleccionado
+                    compania: data.compania,
+                    departamento: data.departamento
                 };
 
                 document.getElementById('login-view').style.setProperty('display', 'none', 'important');
-                document.getElementById('main-view').style.display = 'block';
+                document.getElementById('main-view').style.display = 'flex';
                 
                 document.getElementById('user-banner').innerHTML = 
-                    `<div class="d-flex align-items-center gap-3"><i class="fa-solid fa-user-tie fs-4"></i> <span>Ecosistema Activo de: <strong class="text-uppercase">${datosUsuario.usuario}</strong></span></div>
-                     <div class="d-flex gap-4 font-size-13 fw-600"><span>Compañía: <strong>${datosUsuario.compania}</strong></span><span>Departamento: <strong>${datosUsuario.departamento}</strong></span></div>`;
+                    `<div class="d-flex align-items-center gap-2"><i class="fa-solid fa-user-check text-primary"></i> Operador: <span class="fw-bold text-uppercase">${datosUsuario.usuario}</span></div>
+                     <div class="d-flex gap-3"><span>Empresa: <strong class="fw-bold">${datosUsuario.compania}</strong></span><span>Área: <strong class="fw-bold">${datosUsuario.departamento}</strong></span></div>`;
                 
-                cargarDocumentos();
+                cargarDocumentos(1);
             } else {
-                alert(data.error || "Credenciales incorrectas");
+                alert(data.error || "Credenciales de acceso inválidas");
             }
         }
 
-        async function cargarDocumentos() {
+        async function cargarDocumentos(pagina = 1) {
             if (!datosUsuario) return;
             
+            paginaActual = pagina;
             const nombre = document.getElementById('search-name').value;
             const tipoFiltro = document.getElementById('search-type').value;
             const fecha = document.getElementById('search-date').value;
             
-            let url = `/api/buscar?compania=${encodeURIComponent(datosUsuario.compania)}&departamento=${encodeURIComponent(datosUsuario.departamento)}`;
+            // Construimos la URL enviando la paginación y todos los filtros al servidor de Python
+            let url = `/api/buscar?compania=${encodeURIComponent(datosUsuario.compania)}&departamento=${encodeURIComponent(datosUsuario.departamento)}&page=${paginaActual}&per_page=${porPagina}`;
             
             if (nombre) url += `&nombre=${encodeURIComponent(nombre)}`;
             if (fecha) url += `&fecha=${encodeURIComponent(fecha)}`;
-
             if (tipoFiltro !== 'Todos') {
                 url += `&tipo=${encodeURIComponent(tipoFiltro)}`;
-                if (tipoFiltro === 'Word') url += `&extension=docx&ext=doc&tipo_doc=Word`;
-                else if (tipoFiltro === 'Excel') url += `&extension=xlsx&ext=xls&tipo_doc=Excel`;
-                else if (tipoFiltro === 'PDF') url += `&extension=pdf&tipo_doc=PDF`;
-                else if (tipoFiltro === 'PowerPoint') url += `&extension=pptx&ext=ppt&tipo_doc=PowerPoint`;
             }
 
             try {
                 const res = await fetch(url);
-                let documentos = await res.json();
-                
-                if (tipoFiltro !== 'Todos') {
-                    documentos = documentos.filter(doc => {
-                        const nom = doc.nombre ? String(doc.nombre).toLowerCase() : '';
-                        const tip = doc.tipo ? String(doc.tipo).toLowerCase() : '';
-                        const arc = doc.archivo_descarga ? String(doc.archivo_descarga).toLowerCase() : '';
-                        
-                        if (tipoFiltro === 'Word') return nom.includes('.doc') || nom.includes('auditoría') || nom.includes('productos') || tip.includes('word') || tip.includes('docx') || arc.includes('.doc');
-                        if (tipoFiltro === 'Excel') return nom.includes('.xls') || nom.includes('riesgos') || tip.includes('excel') || tip.includes('xlsx') || arc.includes('.xls');
-                        if (tipoFiltro === 'PDF') return nom.includes('.pdf') || tip.includes('pdf') || arc.includes('.pdf');
-                        if (tipoFiltro === 'PowerPoint') return nom.includes('.ppt') || tip.includes('powerpoint') || tip.includes('pptx') || arc.includes('.ppt');
-                        return true;
-                    });
+                if (!res.ok) {
+                    console.error("Error al obtener los documentos filtrados");
+                    return;
                 }
+                const responseData = await res.json();
                 
+                const documentos = responseData.documentos || [];
+                const totalDocs = responseData.total || 0;
+                totalPaginas = responseData.pages || 1;
+                paginaActual = responseData.page || 1;
+                
+                // Actualizar contadores dinámicos globales desde la respuesta del servidor
+                const kpis = responseData.kpis || { totales: 0, autorizados: 0, revision: 0 };
+                document.getElementById('kpi-totales').innerText = kpis.totales;
+                document.getElementById('kpi-autorizados').innerText = kpis.autorizados;
+                document.getElementById('kpi-revision').innerText = kpis.revision;
+
                 const tbody = document.getElementById('document-rows');
                 tbody.innerHTML = '';
 
                 if (documentos.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-5 fw-600"><i class="fa-solid fa-box-open d-block fs-2 mb-2"></i> No se hallaron registros en este ecosistema.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-5"><i class="fa-solid fa-folder-open d-block fs-3 mb-2 opacity-50"></i> Sin registros documentales en este segmento.</td></tr>`;
+                    actualizarPaginacionUI(0, 0);
                     return;
                 }
 
                 documentos.forEach(doc => {
                     const isAuth = doc.estado === 'Authorized' || doc.estado === 'Autorizado';
-                    const statusClass = isAuth ? 'status-pill-auth' : 'status-pill-rev';
+                    const statusClass = isAuth ? 'pill-auth' : 'pill-rev';
                     const statusText = isAuth ? 'Autorizado' : 'En Revisión';
                     const archivoEncodeado = encodeURIComponent(doc.archivo_descarga || '');
                     
-                    let badgeExtension = `<span class="corporate-file-badge badge-word"><i class="fa-solid fa-file-word"></i> WORD</span>`;
-                    const nomDoc = doc.nombre ? String(doc.nombre).toLowerCase() : '';
-                    const tipDoc = doc.tipo ? String(doc.tipo).toLowerCase() : '';
-                    const arcDoc = doc.archivo_descarga ? String(doc.archivo_descarga).toLowerCase() : '';
+                    let badgeExtension = `<span class="doc-extension-badge ext-word"><i class="fa-solid fa-file-word"></i> Word</span>`;
+                    const nomDoc = doc.nombre ? String(doc.nombre).toUpperCase() : '';
+                    const tipDoc = doc.tipo ? String(doc.tipo).toUpperCase() : '';
                     
-                    if (nomDoc.includes('.pdf') || tipDoc.includes('pdf') || arcDoc.includes('.pdf')) {
-                        badgeExtension = `<span class="corporate-file-badge badge-pdf"><i class="fa-solid fa-file-pdf"></i> PDF</span>`;
-                    } else if(nomDoc.includes('.xls') || nomDoc.includes('riesgos') || tipDoc.includes('excel') || tipDoc.includes('xlsx') || arcDoc.includes('.xls')) {
-                        badgeExtension = `<span class="corporate-file-badge badge-excel"><i class="fa-solid fa-file-excel"></i> EXCEL</span>`;
-                    } else if(nomDoc.includes('.ppt') || tipDoc.includes('powerpoint') || tipDoc.includes('pptx') || arcDoc.includes('.ppt')) {
-                        badgeExtension = `<span class="corporate-file-badge badge-power"><i class="fa-solid fa-file-powerpoint"></i> PPTX</span>`;
+                    if (nomDoc.includes('.PDF') || tipDoc === 'PDF') {
+                        badgeExtension = `<span class="doc-extension-badge ext-pdf"><i class="fa-solid fa-file-pdf"></i> PDF</span>`;
+                    } else if(nomDoc.includes('.XLS') || tipDoc === 'EXCEL') {
+                        badgeExtension = `<span class="doc-extension-badge ext-excel"><i class="fa-solid fa-file-excel"></i> Excel</span>`;
+                    } else if(nomDoc.includes('.PPT') || tipDoc === 'POWERPOINT') {
+                        badgeExtension = `<span class="doc-extension-badge ext-power"><i class="fa-solid fa-file-powerpoint"></i> PPTX</span>`;
                     }
                     
-                    let botonVer = `<a href="/api/ver/${archivoEncodeado}" target="_blank" class="action-pill pill-view"><i class="fa-solid fa-eye"></i> Ver</a>`;
-                    let botonMeta = `<button onclick="abrirMetadatos('${archivoEncodeado}')" class="action-pill pill-info"><i class="fa-solid fa-circle-info"></i> Info</button>`;
-                    let botonDescargar = `<span class="text-muted fs-7 opacity-50 fw-bold"><i class="fa-solid fa-lock"></i> Bloqueado</span>`;
+                    let botonVer = `<a href="/api/ver/${archivoEncodeado}" target="_blank" class="btn-action-pill act-view"><i class="fa-solid fa-eye"></i> Ver</a>`;
+                    let botonMeta = `<button onclick="abrirMetadatos('${archivoEncodeado}')" class="btn-action-pill act-info"><i class="fa-solid fa-circle-info"></i> Info</button>`;
+                    let botonDescargar = `<span class="text-muted small opacity-50 fw-bold"><i class="fa-solid fa-lock me-1"></i>Bloqueado</span>`;
                     
                     if (isAuth) {
-                        botonDescargar = `<a href="/api/descargar/${archivoEncodeado}" class="action-pill pill-download"><i class="fa-solid fa-circle-down"></i> Bajar</a>`;
+                        botonDescargar = `<a href="/api/descargar/${archivoEncodeado}" class="btn-action-pill act-download"><i class="fa-solid fa-download"></i> Bajar</a>`;
                     }
 
                     tbody.innerHTML += `
                         <tr>
-                            <td><div class="d-flex align-items-center gap-2">${badgeExtension}<span class="fw-600 text-main">${doc.nombre || 'Sin título corporativo'}</span></div></td>
-                            <td class="text-center text-muted fw-600">${doc.fecha || '2026-05-27'}</td>
-                            <td class="text-center"><span class="status-pill ${statusClass}">${statusText}</span></td>
-                            <td><div class="actions-wrapper">${botonVer} ${botonMeta} ${botonDescargar}</div></td>
+                            <td><div class="d-flex align-items-center gap-3">${badgeExtension}<span class="fw-600 text-main">${doc.nombre || 'Sin título catalogado'}</span></div></td>
+                            <td class="text-center text-muted fw-600 font-monospace">${doc.fecha || '2026-05-27'}</td>
+                            <td class="text-center"><span class="status-pill-spec ${statusClass}">${statusText}</span></td>
+                            <td><div class="actions-btn-group">${botonVer} ${botonMeta} ${botonDescargar}</div></td>
                         </tr>
                     `;
                 });
+
+                // Actualizar barra de paginación
+                actualizarPaginacionUI(totalDocs, documentos.length);
             } catch (error) {
                 console.error("Error cargando documentos:", error);
             }
         }
 
+        function actualizarPaginacionUI(totalDocs, itemsEnPagina) {
+            const info = document.getElementById('pagination-info');
+            const list = document.getElementById('pagination-list');
+            
+            if (totalDocs === 0) {
+                info.innerText = "Mostrando 0 de 0 registros";
+                list.innerHTML = '';
+                return;
+            }
+
+            const primerRegistro = (paginaActual - 1) * porPagina + 1;
+            const ultimoRegistro = primerRegistro + itemsEnPagina - 1;
+            info.innerText = `Mostrando ${primerRegistro}-${ultimoRegistro} de ${totalDocs} registros`;
+
+            let html = '';
+            
+            // Botón Anterior
+            const prevDisabled = paginaActual === 1 ? 'disabled' : '';
+            html += `<li class="page-item ${prevDisabled}"><a class="page-link" href="#" onclick="cambiarPagina(${paginaActual - 1}); return false;"><i class="fa-solid fa-angle-left"></i></a></li>`;
+            
+            // Botones de Números de Página
+            for (let i = 1; i <= totalPaginas; i++) {
+                const activeClass = paginaActual === i ? 'active' : '';
+                html += `<li class="page-item ${activeClass}"><a class="page-link" href="#" onclick="cambiarPagina(${i}); return false;">${i}</a></li>`;
+            }
+            
+            // Botón Siguiente
+            const nextDisabled = paginaActual === totalPaginas ? 'disabled' : '';
+            html += `<li class="page-item ${nextDisabled}"><a class="page-link" href="#" onclick="cambiarPagina(${paginaActual + 1}); return false;"><i class="fa-solid fa-angle-right"></i></a></li>`;
+            
+            list.innerHTML = html;
+        }
+
+        function cambiarPagina(nuevaPagina) {
+            if (nuevaPagina < 1 || nuevaPagina > totalPaginas) return;
+            cargarDocumentos(nuevaPagina);
+        }
+
         async function abrirMetadatos(archivo) {
             const res = await fetch(`/api/metadatos/${archivo}`);
-            if (!res.ok) { alert("Error cargando auditoría de metadatos."); return; }
+            if (!res.ok) { alert("Error al conectar con la base de datos."); return; }
             const meta = await res.json();
             
             document.getElementById('modal-archivo-origen').value = meta.archivo_descarga || '';
@@ -602,37 +755,6 @@
 
         function cerrarModal() {
             if(bsModalInstance) bsModalInstance.hide();
-        }
-
-        async function guardarCambiosMetadatos() {
-            const archivoOrigen = document.getElementById('modal-archivo-origen').value;
-            const nuevoNombre = document.getElementById('modal-nombre').value;
-            const nuevaCompania = document.getElementById('modal-compania').value;
-            const nuevoDepto = document.getElementById('modal-departamento').value;
-            
-            const res = await fetch('/api/metadatos/editar', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    archivo_descarga: archivoOrigen,
-                    nombre: nuevoNombre,
-                    compania_destino: nuevaCompania,
-                    departamento: nuevoDepto,
-                    codigo_doc: document.getElementById('modal-codigo-doc').value,
-                    version: document.getElementById('modal-version').value,
-                    autor_subida: document.getElementById('modal-autor').value,
-                    tamano: document.getElementById('modal-tamano').value,
-                    clasificacion: document.getElementById('modal-clasificacion').value
-                })
-            });
-
-            if (res.ok) {
-                cerrarModal();
-                alert("¡Metadatos guardados con éxito!");
-                cargarDocumentos();
-            } else {
-                alert("Error al guardar cambios de metadatos.");
-            }
         }
     </script>
 </body>
