@@ -1,33 +1,40 @@
 <?php
-// Aseguramos que la sesión inicie limpia y destruya rastros anteriores si se viene de un logout
+// Aseguramos que la sesión inicie
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 require_once 'db.php'; 
+
+// CRÍTICO: Si el usuario ya inició sesión antes, lo mandamos directo a dashboard.php.
+// Asegúrate de que tu archivo de dashboard se llame exactamente "dashboard.php"
+if (isset($_SESSION['usuario_id'])) {
+    header("Location: dashboard.php");
+    exit();
+}
 
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nomina = trim($_POST['nomina']);
     $password = trim($_POST['password']);
-    $ubicacion_elegida = isset($_POST['ubicacion']) ? trim($_POST['ubicacion']) : '';
 
-    if (!empty($nomina) && !empty($password) && !empty($ubicacion_elegida)) {
+    if (!empty($nomina) && !empty($password)) {
         try {
             $stmt = $pdo->prepare("SELECT * FROM usuarios WHERE nomina = :nomina LIMIT 1");
             $stmt->execute([':nomina' => $nomina]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if ($user && $password === $user['password'] && $ubicacion_elegida === $user['usuario_ubicacion']) {
+            // Validación limpia: Solo comparamos usuario y contraseña. 
+            if ($user && $password === $user['password']) {
                 $_SESSION['usuario_id'] = $user['id'];
                 $_SESSION['usuario_nombre'] = $user['nombre'];
                 $_SESSION['usuario_nomina'] = $user['nomina'];
-                $_SESSION['usuario_ubicacion'] = $user['usuario_ubicacion']; 
+                $_SESSION['usuario_ubicacion'] = $user['usuario_ubicacion']; // <-- Asignación automática
 
                 header("Location: dashboard.php");
-                exit;
+                exit();
             } else {
-                $error = "Acceso denegado. Credenciales o área incorrectas.";
+                $error = "Acceso denegado. Credenciales incorrectas.";
             }
         } catch (PDOException $e) {
             $error = "Error de conexión con la base de datos: " . $e->getMessage();
@@ -46,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* 🎨 NUEVA TEMÁTICA CLARA INTEGRAL DE ACUERDO AL CUERPO DEL DASHBOARD */
+        /* 🎨 TEMÁTICA CLARA INTEGRAL DE ACUERDO AL CUERPO DEL DASHBOARD */
         :root {
             --primary-blue: #0284c7; /* Azul corporativo del menú */
             --primary-hover: #0369a1; 
@@ -161,7 +168,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         /* Inputs Claros Estilo Moderno */
-        .input-group input, .input-group select {
+        .input-group input {
             width: 100%;
             padding: 13px 15px 13px 48px;
             background: #f8fafc !important;
@@ -173,9 +180,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             outline: none;
             box-sizing: border-box;
             transition: 0.2s ease;
-            appearance: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
         }
 
         /* Compatibilidad de autocompletado en navegadores */
@@ -185,41 +189,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             transition: background-color 5000s ease-in-out 0s;
         }
 
-        .input-group select {
-            cursor: pointer;
-            padding-right: 40px;
-        }
-
-        /* Flecha del selector */
-        .input-group.select-container::after {
-            content: "\f107";
-            font-family: "Font Awesome 5 Free";
-            font-weight: 900;
-            position: absolute;
-            right: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-muted);
-            font-size: 1rem;
-            pointer-events: none;
-        }
-
-        .input-group input:focus, .input-group select:focus {
+        .input-group input:focus {
             border-color: var(--primary-blue);
             box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
             background: #ffffff !important;
-        }
-
-        select option {
-            background: #ffffff;
-            color: var(--text-dark);
-            padding: 12px;
-        }
-
-        select optgroup {
-            background: #f1f5f9;
-            color: var(--primary-blue);
-            font-weight: 600;
         }
 
         /* Botón Azul Reactivo */
@@ -284,7 +257,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <?php if (!empty($error)): ?>
-        <div class="error-message"><?php echo $error; ?></div>
+        <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
     <?php endif; ?>
 
     <form action="" method="POST" id="loginForm" autocomplete="off">
@@ -297,21 +270,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="input-group">
             <i class="fa-solid fa-lock input-icon"></i>
             <input type="password" name="password" id="inputPassword" placeholder="Contraseña" required autocomplete="new-password">
-        </div>
-
-        <div class="input-group select-container">
-            <i class="fa-solid fa-building input-icon"></i>
-            <select name="ubicacion" id="selectUbicacion" required>
-                <option value="" disabled selected>Seleccione Empresa y Área</option>
-                <optgroup label="Empresa Alpha">
-                    <option value="Alpha - Calidad">Alpha - Calidad</option>
-                    <option value="Alpha - Producion">Alpha - Producción</option>
-                </optgroup>
-                <optgroup label="Empresa Beta">
-                    <option value="Beta - Administracion">Beta - Administración</option>
-                    <option value="Beta - Logistica">Beta - Logística</option>
-                </optgroup>
-            </select>
         </div>
 
         <button type="submit" class="btn-login">Ingresar al Portal</button>
@@ -332,7 +290,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         setTimeout(() => {
             document.getElementById('inputNomina').value = '';
             document.getElementById('inputPassword').value = '';
-            document.getElementById('selectUbicacion').selectedIndex = 0;
         }, 50); 
     });
 </script>

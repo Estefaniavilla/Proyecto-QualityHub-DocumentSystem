@@ -1,4 +1,4 @@
-
+version: '3.8'
 
 services:
   # Base de Datos para Estefanía (.NET)
@@ -28,20 +28,19 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./src/php-portal/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
-              - ./uploads:/var/www/html/uploads
+      - ./storage/actuales:/var/www/html/storage/actuales
     networks:
       - app-network
 
-
   # Base de Datos para Fernanda (Python/Mongo)
   mongodb:
-    image: mongo:7
+    image: mongo:latest
     container_name: mongodb_container
+    restart: always
     ports:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
-      - ./uploads:/var/www/html/uploads
     networks:
       - app-network
 
@@ -52,32 +51,29 @@ services:
     ports:
       - "8081:80"
     volumes:
-        - ./src/php-portal:/var/www/html
-        - ./storage/actuales:/var/www/html/uploads
+       - ./src/php-portal:/var/www/html
+       - ./src/php-portal/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+       - ./storage/actuales:/var/www/html/storage/actuales
     depends_on:
       - postgres_db
     networks:
       - app-network
 
-  # MÓDULO DE BÚSQUEDA (Fernanda) - Corriendo en Servidor
-  busqueda-python:
+  # fernanda
+  python_busqueda:
     build: ./docker/python
     container_name: python_busqueda_container
-    ports:
-      - "8082:5000"
-    environment:
-      - MONGO_URI=mongodb://mongodb:27017/
+    restart: always
     volumes:
       - ./docker/python:/app
-      - ./uploads:/app/uploads
-    networks:
-      - app-network
+      - ./storage/actuales:/app/storage/actuales
+    ports:
+      - "8082:5000"
     depends_on:
       - mongodb
-    restart: always
-  # Aquí Estefanía y Fer agregarán sus servicios después, 
-  # pero ya les dejas listo el volumen compartido.
-
+    networks:
+      - app-network
+      
 networks:
   app-network:
     driver: bridge
@@ -85,4 +81,4 @@ networks:
 volumes:
   postgres_data:
   mongo_data:
-  shared-files: 
+  shared-files:
