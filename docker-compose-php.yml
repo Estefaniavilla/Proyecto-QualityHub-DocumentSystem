@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  postgres_db:
+    image: postgres:16
+    container_name: postgres_db_container
+    environment:
+      POSTGRES_USER: user_admin
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: quality_reports
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./src/php-portal/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+      - ./storage/actuales:/var/www/html/storage/actuales
+    networks:
+      - app-network
+
+  php-portal:
+    image: chialab/php:8.2-apache
+    container_name: php_portal_container
+    ports:
+      - "8081:80"
+    volumes:
+       - ./src/php-portal:/var/www/html
+       - ./src/php-portal/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+       - ./storage/actuales:/var/www/html/storage/actuales
+    depends_on:
+      - postgres_db
+    networks:
+      - app-network
+
+# Conectamos a la red externa que creamos en el paso 1
+networks:
+  app-network:
+    external: true
+
+volumes:
+  postgres_data:

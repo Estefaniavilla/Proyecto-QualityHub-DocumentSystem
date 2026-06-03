@@ -1,29 +1,28 @@
 <?php
-header('Content-Type: application/json');
-$data = json_decode(file_get_contents('php://input'), true);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $codigo_iso = $_POST['codigo_iso'] ?? '';
+    $sugerencia = $_POST['sugerencia'] ?? '';
 
-if (!$data || !isset($data['DocumentoId'])) {
-    echo json_encode(['success' => false, 'message' => 'Faltan datos.']);
-    exit;
-}
+    // 🔥 IMPORTANTE: Cambia "7083" por el puerto exacto en el que corre tu C# (Localhost)
+// ✅ PHP habla con C# por nombre de servicio Docker
+    $url_csharp = "http://csharp_app_container:8080/api/RecibirFalla";
+    $ch = curl_init($url_csharp);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
+        'codigoIso' => $codigo_iso,
+        'sugerencia' => $sugerencia
+    ]));
+    
+    // Ignoramos el certificado SSL por si tu localhost en C# marca error de "no seguro"
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
 
-$dotnet_url = "https://localhost:7083/Home/RecibirSugerenciaPhp"; 
+    $response = curl_exec($ch);
+    $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
 
-$ch = curl_init($dotnet_url);
-curl_setopt($ch, CURLOPT_POST, 1);
-curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Obligatorio para local
-curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-
-$response = curl_exec($ch);
-$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-curl_close($ch);
-
-if ($http_code == 200) {
-    echo json_encode(['success' => true]);
-} else {
-    echo json_encode(['success' => false, 'error' => 'No se alcanzó el servidor .NET (Código HTTP: ' . $http_code . ')']);
+    header('Content-Type: application/json');
+    echo json_encode(['success' => ($httpcode == 200), 'respuesta' => $response]);
 }
 ?>

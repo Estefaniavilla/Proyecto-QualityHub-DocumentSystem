@@ -1,59 +1,46 @@
 <?php
-/**
- * ver_archivo.php
- * Conecta el almacenamiento de .NET con el portal PHP
- */
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+if (!isset($_SESSION['usuario_id'])) { http_response_code(403); exit('Acceso denegado'); }
 
-$archivo = basename($_GET['f'] ?? '');
-$descargar = isset($_GET['download']) ? true : false;
+$archivo   = basename($_GET['f'] ?? '');
+$descargar = isset($_GET['download']) && $_GET['download'] == '1';
 
-if (empty($archivo)) {
-    http_response_code(400);
-    echo 'Archivo no especificado.';
-    exit;
-}
+if (empty($archivo)) { http_response_code(400); exit('Archivo no especificado'); }
 
-// =========================================================================
-// 🔴 ¡ATENCIÓN! Cambia "estef" y "QualityDoc-Polyglot" por el nombre
-// real de la carpeta donde tienes tu proyecto de C# en tu computadora.
-// =========================================================================
-$rutas = [
-    __DIR__ . '/storage/actuales/' . $archivo,                             
-    'C:/Users/estef/source/repos/QualityHub-DocumentSystem/storage/actuales/' . $archivo,
-    'C:/Users/estef/QualityHub-DocumentSystem/storage/actuales/' . $archivo 
-];
+// Ruta física dentro del contenedor Docker (mapea a ./storage/actuales en tu host)
+$ruta = __DIR__ . '/storage/actuales/' . $archivo;
 
-$rutaEncontrada = null;
-foreach ($rutas as $r) {
-    if (file_exists($r)) {
-        $rutaEncontrada = $r;
-        break;
-    }
-}
-
-if (!$rutaEncontrada) {
+if (!file_exists($ruta)) {
     http_response_code(404);
-    echo "<h2>Error 404</h2><p>El archivo <b>$archivo</b> no se encuentra físicamente en el storage de .NET.</p>";
+    echo '<!DOCTYPE html><html><body style="font-family:sans-serif;text-align:center;padding:60px;">
+    <h2 style="color:#dc2626;">&#x26A0; Archivo no encontrado</h2>
+    <p style="color:#64748b;">El archivo <b>' . htmlspecialchars($archivo) . '</b> no existe en el servidor.</p>
+    <p style="font-size:.85rem;color:#94a3b8;">Verifica que el Autorizador de C# haya copiado el archivo físico a la carpeta <code>storage/actuales/</code></p>
+    </body></html>';
     exit;
 }
 
-$ext = strtolower(pathinfo($archivo, PATHINFO_EXTENSION));
-$contentType = 'application/octet-stream';
-if ($ext === 'pdf') $contentType = 'application/pdf';
-if (in_array($ext, ['doc', 'docx'])) $contentType = 'application/msword';
-if (in_array($ext, ['xls', 'xlsx'])) $contentType = 'application/vnd.ms-excel';
+// Detectar tipo MIME
+$ext  = strtolower(pathinfo($archivo, PATHINFO_EXTENSION));
+$mime = match($ext) {
+    'pdf'  => 'application/pdf',
+    'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'doc'  => 'application/msword',
+    'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'xls'  => 'application/vnd.ms-excel',
+    'png'  => 'image/png',
+    'jpg'  => 'image/jpeg',
+    default => 'application/octet-stream'
+};
 
-header('Content-Type: ' . $contentType);
-header('Content-Length: ' . filesize($rutaEncontrada));
-
-if ($ext === 'pdf' && !$descargar) {
-    // Si es PDF y es vista previa, mostrar en navegador
-    header('Content-Disposition: inline; filename="' . $archivo . '"');
-} else {
-    // Si es Office o botón de descarga, forzar descarga
+// Headers de descarga o visualización
+header('Content-Type: ' . $mime);
+header('Content-Length: ' . filesize($ruta));
+if ($descargar) {
     header('Content-Disposition: attachment; filename="' . $archivo . '"');
+} else {
+    header('Content-Disposition: inline; filename="' . $archivo . '"');
 }
-
-readfile($rutaEncontrada);
+readfile($ruta);
 exit;
 ?>

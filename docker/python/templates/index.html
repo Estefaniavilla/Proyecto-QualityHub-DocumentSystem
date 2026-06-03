@@ -137,7 +137,7 @@
         .wrapper-layout { display: flex; min-height: 100vh; }
 
         .sidebar-corporate {
-            width: 340px; background: var(--sidebar-bg); padding: 30px 24px;
+            width: 380px; background: var(--sidebar-bg); padding: 30px 24px;
             color: white; display: flex; flex-direction: column; flex-shrink: 0;
             box-shadow: 4px 0 25px rgba(0,0,0,0.05);
         }
@@ -375,7 +375,7 @@
             <div class="sidebar-filters-box">
                 <div class="mb-3">
                     <label class="custom-label-spec">Buscar Documento / Metadatos</label>
-                    <input type="text" id="search-name" class="form-control custom-input-spec" placeholder="Código, nombre, autor, versión...">
+                    <input type="text" id="search-name" class="form-control custom-input-spec" placeholder="Código, nombre o palabra clave...">
                 </div>
                 <div class="mb-3">
                     <label class="custom-label-spec">Formato Técnico</label>
@@ -528,10 +528,7 @@
                     </div>
                     <div>
                         <label class="custom-label-spec">Estatus de Validación</label>
-                        <select id="modal-autorizado" class="form-select custom-input-spec" disabled style="opacity:0.75; font-weight:700;">
-                            <option value="Autorizado">Autorizado</option>
-                            <option value="En Revisión (No)">En Revisión (No)</option>
-                        </select>
+                        <input type="text" id="modal-autorizado" class="form-control custom-input-spec" readonly style="opacity:0.75; font-weight:700;" value="Aprobada">
                     </div>
                 </div>
                 <div class="modal-footer border-0 pt-0">
@@ -651,37 +648,34 @@
                 }
 
                 documentos.forEach(doc => {
-                    const isAuth = doc.estado === 'Authorized' || doc.estado === 'Autorizado';
-                    const statusClass = isAuth ? 'pill-auth' : 'pill-rev';
-                    const statusText = isAuth ? 'Autorizado' : 'En Revisión';
                     const archivoEncodeado = encodeURIComponent(doc.archivo_descarga || '');
                     
-                    let badgeExtension = `<span class="doc-extension-badge ext-word"><i class="fa-solid fa-file-word"></i> Word</span>`;
-                    const nomDoc = doc.nombre ? String(doc.nombre).toUpperCase() : '';
+                    // Detección del tipo de documento usando archivo_descarga para máxima precisión
+                    const archivoNombre = doc.archivo_descarga ? String(doc.archivo_descarga).toUpperCase() : '';
                     const tipDoc = doc.tipo ? String(doc.tipo).toUpperCase() : '';
                     
-                    if (nomDoc.includes('.PDF') || tipDoc === 'PDF') {
+                    let badgeExtension = '';
+                    if (archivoNombre.endsWith('.PDF') || tipDoc === 'PDF') {
                         badgeExtension = `<span class="doc-extension-badge ext-pdf"><i class="fa-solid fa-file-pdf"></i> PDF</span>`;
-                    } else if(nomDoc.includes('.XLS') || tipDoc === 'EXCEL') {
+                    } else if (archivoNombre.endsWith('.XLS') || archivoNombre.endsWith('.XLSX') || tipDoc === 'XLS' || tipDoc === 'XLSX' || tipDoc === 'EXCEL') {
                         badgeExtension = `<span class="doc-extension-badge ext-excel"><i class="fa-solid fa-file-excel"></i> Excel</span>`;
-                    } else if(nomDoc.includes('.PPT') || tipDoc === 'POWERPOINT') {
+                    } else if (archivoNombre.endsWith('.PPT') || archivoNombre.endsWith('.PPTX') || tipDoc === 'PPT' || tipDoc === 'PPTX' || tipDoc === 'POWERPOINT') {
                         badgeExtension = `<span class="doc-extension-badge ext-power"><i class="fa-solid fa-file-powerpoint"></i> PPTX</span>`;
+                    } else if (archivoNombre.endsWith('.DOC') || archivoNombre.endsWith('.DOCX') || tipDoc === 'DOC' || tipDoc === 'DOCX' || tipDoc === 'WORD') {
+                        badgeExtension = `<span class="doc-extension-badge ext-word"><i class="fa-solid fa-file-word"></i> Word</span>`;
+                    } else {
+                        badgeExtension = `<span class="doc-extension-badge ext-word"><i class="fa-solid fa-file-lines"></i> ${tipDoc || 'Otro'}</span>`;
                     }
                     
                     let botonVer = `<a href="/api/ver/${archivoEncodeado}" target="_blank" class="btn-action-pill act-view"><i class="fa-solid fa-eye"></i> Ver</a>`;
                     let botonMeta = `<button onclick="abrirMetadatos('${archivoEncodeado}')" class="btn-action-pill act-info"><i class="fa-solid fa-circle-info"></i> Info</button>`;
-                    let botonDescargar = `<span class="text-muted small opacity-50 fw-bold"><i class="fa-solid fa-lock me-1"></i>Bloqueado</span>`;
-                    
-                    if (isAuth) {
-                        botonDescargar = `<a href="/api/descargar/${archivoEncodeado}" class="btn-action-pill act-download"><i class="fa-solid fa-download"></i> Bajar</a>`;
-                    }
 
                     tbody.innerHTML += `
                         <tr>
                             <td><div class="d-flex align-items-center gap-3">${badgeExtension}<span class="fw-600 text-main">${doc.nombre || 'Sin título catalogado'}</span></div></td>
                             <td class="text-center text-muted fw-600 font-monospace">${doc.fecha || '2026-05-27'}</td>
-                            <td class="text-center"><span class="status-pill-spec ${statusClass}">${statusText}</span></td>
-                            <td><div class="actions-btn-group">${botonVer} ${botonMeta} ${botonDescargar}</div></td>
+                            <td class="text-center"><span class="status-pill-spec pill-auth">Aprobada</span></td>
+                            <td><div class="actions-btn-group">${botonVer} ${botonMeta}</div></td>
                         </tr>
                     `;
                 });
@@ -745,7 +739,7 @@
             document.getElementById('modal-compania').value = meta.compania_destino || "";
             document.getElementById('modal-departamento').value = meta.departamento || "";
             document.getElementById('modal-clasificacion').value = meta.clasificacion || "Uso Interno";
-            document.getElementById('modal-autorizado').value = (meta.estado === 'Authorized' || meta.estado === 'Autorizado') ? 'Autorizado' : 'En Revisión (No)';
+            document.getElementById('modal-autorizado').value = 'Aprobada';
             
             if(!bsModalInstance) {
                 bsModalInstance = new bootstrap.Modal(document.getElementById('metadataBootstrapModal'));

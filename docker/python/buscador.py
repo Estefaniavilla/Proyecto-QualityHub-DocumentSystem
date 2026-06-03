@@ -5,6 +5,71 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 
 app = Flask(__name__)
 
+# --- Funciones de extracción de texto de documentos ---
+def extraer_texto_pdf(ruta):
+    """Extrae texto de un archivo PDF usando pdfplumber"""
+    try:
+        import pdfplumber
+        texto = ""
+        with pdfplumber.open(ruta) as pdf:
+            for pagina in pdf.pages[:10]:  # Limitar a 10 páginas para rendimiento
+                t = pagina.extract_text()
+                if t:
+                    texto += t + " "
+        return texto.strip()
+    except Exception:
+        return ""
+
+def extraer_texto_docx(ruta):
+    """Extrae texto de un archivo Word .docx"""
+    try:
+        from docx import Document
+        doc = Document(ruta)
+        texto = " ".join([p.text for p in doc.paragraphs if p.text])
+        return texto.strip()
+    except Exception:
+        return ""
+
+def extraer_texto_excel(ruta):
+    """Extrae texto de un archivo Excel .xls/.xlsx"""
+    try:
+        from openpyxl import load_workbook
+        wb = load_workbook(ruta, read_only=True, data_only=True)
+        texto = ""
+        for ws in wb.worksheets[:5]:  # Limitar a 5 hojas
+            for row in ws.iter_rows(max_row=200, values_only=True):
+                for cell in row:
+                    if cell is not None:
+                        texto += str(cell) + " "
+        wb.close()
+        return texto.strip()
+    except Exception:
+        return ""
+
+def extraer_texto_archivo(ruta, extension):
+    """Extrae texto del archivo según su extensión"""
+    ext = extension.upper()
+    if ext == 'PDF':
+        return extraer_texto_pdf(ruta)
+    elif ext in ('DOCX', 'DOC'):
+        return extraer_texto_docx(ruta)
+    elif ext in ('XLS', 'XLSX'):
+        return extraer_texto_excel(ruta)
+    return ""
+
+def clasificar_tipo_archivo(extension):
+    """Convierte la extensión cruda a un nombre de tipo legible"""
+    ext = extension.upper()
+    if ext == 'PDF':
+        return 'PDF'
+    elif ext in ('DOC', 'DOCX'):
+        return 'Word'
+    elif ext in ('XLS', 'XLSX'):
+        return 'Excel'
+    elif ext in ('PPT', 'PPTX'):
+        return 'PowerPoint'
+    return ext
+
 # Ruta interna dentro del contenedor mapeada al volumen compartido
 CARPETA_ALMACENAMIENTO = '/app/storage/actuales'
 
@@ -47,7 +112,7 @@ def mapear_formato(formato):
         return ['POWERPOINT', 'PPT', 'PPTX']
     elif formato_upper == 'PDF':
         return ['PDF']
-    return []
+    return [formato_upper]
 
 @app.route('/')
 def index():
@@ -136,6 +201,7 @@ def buscar_documentos():
             continue
 
         ext = archivo.split('.')[-1].upper() if '.' in archivo else 'Desconocido'
+        tipo_legible = clasificar_tipo_archivo(ext)
         
         # Filtro de tipo rápido previo a la base de datos
         if filtro_tipo != 'Todos':
@@ -162,11 +228,14 @@ def buscar_documentos():
                 fecha_real = "2026-05-26"
 
             tamano_real = obtener_tamano_formateado(ruta_completa)
-            nombre_limpio = archivo.replace(f'.{ext.lower()}', '').replace('_', ' ')
+            nombre_limpio = archivo.rsplit('.', 1)[0].replace('_', ' ') if '.' in archivo else archivo.replace('_', ' ')
             
             # Generamos un código documental único basado en un hash estable del nombre
             codigo_hash = str(abs(hash(archivo)))[:4]
-            codigo_documental = f"QH-{ext}-{codigo_hash}"
+            codigo_documental = f"QH-{tipo_legible.upper()}-{codigo_hash}"
+
+            # Extraer texto del documento para búsqueda por palabras clave
+            texto_extraido = extraer_texto_archivo(ruta_completa, ext)
 
             doc_mongo = {
                 "nombre": nombre_limpio,
@@ -174,13 +243,14 @@ def buscar_documentos():
                 "version": "V-1.0",
                 "autor_subida": "Estefanía (Gestor Documental)",
                 "fecha": fecha_real,
-                "estado": "En Revisión (No)",  # Estatus inicial por defecto
+                "estado": "Autorizado",
                 "archivo_descarga": archivo,
                 "compania_destino": filtro_compania if filtro_compania else "Compania_A",
                 "departamento": filtro_departamento if filtro_departamento else "Calidad",
-                "tipo": ext,
+                "tipo": tipo_legible,
                 "tamano": tamano_real,
-                "clasificacion": "Confidencial Interno"
+                "clasificacion": "Confidencial Interno",
+                "texto_extraido": texto_extraido
             }
             try:
                 coleccion_metadatos.insert_one(doc_mongo.copy())
@@ -196,34 +266,28 @@ def buscar_documentos():
             # 2. Filtro de Tipo Técnico
             if filtro_tipo != 'Todos':
                 formatos_permitidos = mapear_formato(filtro_tipo)
-                ext_doc = doc_mongo.get("tipo", ext).upper()
-                if ext_doc not in formatos_permitidos:
+                # Verificar tanto la extensión cruda como el tipo legible almacenado
+                ext_doc = doc_mongo.get("tipo", "").upper()
+                if ext_doc not in formatos_permitidos and ext not in formatos_permitidos:
                     continue
 
             # 3. Filtro de Fecha de Registro
             if filtro_fecha and filtro_fecha != doc_mongo.get("fecha", ""):
                 continue
 
-            # 4. Filtro por Nombre y Metadatos Extendidos (Búsqueda global en campos de metadatos)
+            # 4. Filtro por Nombre, Código y Texto Extraído del Documento
             if filtro_nombre:
-                # Comprobamos coincidencias en Nombre, Código ISO, Versión, Autor de Subida, Clasificación y Formato
                 nombre_doc = doc_mongo.get("nombre", "").lower()
                 codigo_doc = doc_mongo.get("codigo_doc", "").lower()
-                version_doc = doc_mongo.get("version", "").lower()
-                autor_doc = doc_mongo.get("autor_subida", "").lower()
-                clasif_doc = doc_mongo.get("clasificacion", "").lower()
-                tipo_doc = doc_mongo.get("tipo", "").lower()
                 nombre_archivo = archivo.lower()
+                texto_doc = doc_mongo.get("texto_extraido", "").lower()
 
                 match_name = filtro_nombre in nombre_doc
                 match_codigo = filtro_nombre in codigo_doc
-                match_version = filtro_nombre in version_doc
-                match_autor = filtro_nombre in autor_doc
-                match_clasif = filtro_nombre in clasif_doc
-                match_tipo = filtro_nombre in tipo_doc
                 match_archivo = filtro_nombre in nombre_archivo
+                match_texto = filtro_nombre in texto_doc
 
-                if not (match_name or match_codigo or match_version or match_autor or match_clasif or match_tipo or match_archivo):
+                if not (match_name or match_codigo or match_archivo or match_texto):
                     continue
 
             tamano_str = doc_mongo.get("tamano") or obtener_tamano_formateado(ruta_completa)
@@ -234,11 +298,11 @@ def buscar_documentos():
                 "version": doc_mongo.get("version", "V-1.0"),
                 "autor_subida": doc_mongo.get("autor_subida", "Estefanía (Gestor Documental)"),
                 "fecha": doc_mongo.get("fecha", "2026-05-26"),
-                "estado": doc_mongo.get("estado", "En Revisión (No)"),
+                "estado": doc_mongo.get("estado", "Autorizado"),
                 "archivo_descarga": archivo,
                 "compania_destino": doc_mongo.get("compania_destino", "Compania_A"),
                 "departamento": doc_mongo.get("departamento", "Calidad"),
-                "tipo": ext,
+                "tipo": tipo_legible,
                 "tamano": tamano_str,
                 "clasificacion": doc_mongo.get("clasificacion", "Uso Interno")
             })

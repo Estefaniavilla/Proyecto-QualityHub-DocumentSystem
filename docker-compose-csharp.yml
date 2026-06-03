@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  sql_server_db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sql_server_db
+    ports:
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=YourStrong@Password
+    networks:
+      - app-network
+    volumes:
+      - shared-files:/shared/storage
+
+  csharp-app:
+    build:
+      context: C:\Users\estef\source\repos\QualityHub-DocumentSystem\QualityHub-DocumentSystem
+      dockerfile: Dockerfile
+    container_name: csharp_app_container
+    ports:
+      - "7083:8080"       
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=sql_server_db,1433;Database=QualityHub-DocumentSystem;User Id=sa;Password=YourStrong@Password;TrustServerCertificate=True;MultipleActiveResultSets=true;
+      - ASPNETCORE_ENVIRONMENT=Production
+      - PHP_PORTAL_URL=http://php_portal_container:80
+    volumes:
+      - ./storage/actuales:/app/storage/actuales
+    depends_on:
+      - sql_server_db
+    networks:
+      - app-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+networks:
+  app-network:
+    external: true
+
+volumes:
+  shared-files:

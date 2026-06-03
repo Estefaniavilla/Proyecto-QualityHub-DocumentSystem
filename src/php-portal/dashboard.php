@@ -549,7 +549,7 @@ function iconoPorTipo($tipo) {
                             <td class="actions-cell">
                                 <button onclick="verDocumento(<?= $doc['id'] ?>, '<?= htmlspecialchars($doc['nombre_fisico']) ?>', '<?= strtolower($doc['tipo_archivo']) ?>')" class="btn-action btn-view-doc" title="Ver"><i class="fa-regular fa-eye"></i></button>
                                 <a href="ver_archivo.php?f=<?= htmlspecialchars($doc['nombre_fisico']) ?>&download=1" onclick="registrarLog(<?= $doc['id'] ?>, 'DESCARGA')" class="btn-action btn-download-doc" title="Descargar"><i class="fa-solid fa-cloud-arrow-down"></i></a>
-                                <button onclick="abrirModalReporte(<?= $doc['id'] ?>)" class="btn-action btn-report-doc" title="Reportar Falla"><i class="fa-solid fa-paper-plane"></i></button>
+                               <button onclick="abrirModalReporte('<?= $doc['codigo_iso'] ?>')" class="btn-action btn-report-doc" title="Reportar Falla"><i class="fa-solid fa-paper-plane"></i></button>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -874,6 +874,59 @@ function iconoPorTipo($tipo) {
         document.getElementById('modalViewContent').innerHTML = '';
     }
 </script>
+     <!-- Cargar SweetAlert para las ventanas emergentes -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+<script>
+    // 👁️ 1. VISOR DE DOCUMENTOS
+    // Usa la ruta mapeada en tu Docker ./storage/actuales
+   function verDocumento(id, archivoFisico, tipo) {
+    // Redirigimos directamente al servidor de archivos de C#
+    var urlCsharp = 'http://localhost:7083/storage/actuales/' + encodeURIComponent(archivoFisico);
+    window.open(urlCsharp, '_blank');
+}
+    // 🚩 2. REPORTAR FALLA A C#
+    function abrirModalReporte(codigoIso) {
+        Swal.fire({
+            title: 'Reportar Anomalía al Creador',
+            text: 'Describe el problema de calidad o error en el documento:',
+            input: 'textarea',
+            inputPlaceholder: 'Ej: El logotipo es incorrecto, la página 3 está borrosa...',
+            showCancelButton: true,
+            confirmButtonText: 'Enviar Reporte a C#',
+            cancelButtonText: 'Cancelar',
+            preConfirm: (sugerencia) => {
+                if (!sugerencia) Swal.showValidationMessage('Por favor escribe el motivo de la falla');
+                return sugerencia;
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Enviamos los datos por AJAX a nuestro archivo PHP intermediario
+                const formData = new FormData();
+                formData.append('codigo_iso', codigoIso);
+                formData.append('sugerencia', result.value);
+
+                fetch('reportar_falla.php', { method: 'POST', body: formData })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire('¡Enviado!', 'El creador ha sido notificado y el documento bajó a estado Rechazado.', 'success');
+                    } else {
+                        Swal.fire('Error', 'No se pudo contactar al servidor C# (Revisa el puerto en reportar_falla.php)', 'error');
+                    }
+                });
+            }
+        });
+    }
+
+    // 📊 3. REGISTRAR LOGS DE DESCARGA (Para tus métricas de PHP)
+    function registrarLog(id, accion) {
+        const formData = new FormData();
+        formData.append('registrar_log', '1');
+        formData.append('doc_id', id);
+        formData.append('accion', accion);
+        fetch('dashboard.php', { method: 'POST', body: formData });
+    }
+</script>
 </body>
 </html>
