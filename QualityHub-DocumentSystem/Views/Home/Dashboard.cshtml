@@ -1,0 +1,165 @@
+﻿@* Views/Home/Dashboard.cshtml *@
+@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    ViewData["Title"] = "Panel de Control";
+
+    // 🌟 Recuperamos los datos del usuario e ID de Rol desde la sesión activa
+    string userNameSession = HttpContextAccessor.HttpContext.Session.GetString("UserName") ?? "Usuario";
+    int? roleId = HttpContextAccessor.HttpContext.Session.GetInt32("RoleID");
+
+    // Inicializamos las variables para el Badge de Rol
+    string rolEtiqueta = "Personal Operativo";
+    string badgeClase = "bg-secondary";
+
+    if (roleId == 1)
+    {
+        rolEtiqueta = "Creador de Contenido";
+        badgeClase = "bg-primary text-white";
+    }
+    else if (roleId == 2)
+    {
+        rolEtiqueta = "Revisador Técnico";
+        badgeClase = "bg-warning text-dark";
+    }
+    else if (roleId == 3)
+    {
+        rolEtiqueta = "Autorizador de Calidad";
+        badgeClase = "bg-success text-white";
+    }
+
+    // Generamos automáticamente las iniciales del Avatar (Ej: "estefania.admin" -> "EA")
+    string iniciales = "U";
+    if (!string.IsNullOrEmpty(userNameSession))
+    {
+        if (userNameSession.Contains("."))
+        {
+            var partes = userNameSession.Split('.');
+            iniciales = (partes[0].Substring(0, 1) + partes[1].Substring(0, 1)).ToUpper();
+        }
+        else
+        {
+            iniciales = userNameSession.Substring(0, Math.Min(2, userNameSession.Length)).ToUpper();
+        }
+    }
+}
+
+<style>
+    /* Estilo para la sección Hero Industrial */
+    .hero-section {
+        background: linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.65)), url('https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=1920&auto=format&fit=crop');
+        background-size: cover;
+        background-position: center;
+        height: 260px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        border-radius: 12px;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .hero-content h1 {
+        font-size: 2.2rem !important;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        margin-bottom: 8px;
+    }
+
+    .hero-content p {
+        font-size: 1.1rem !important;
+        opacity: 0.9;
+        margin-bottom: 20px;
+    }
+
+    /* Estilo de las tarjetas de módulos */
+    .feature-card {
+        border: none;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        background-color: #ffffff;
+    }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.08) !important;
+        }
+
+    .icon-box {
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        margin: 0 auto 15px;
+    }
+</style>
+
+
+
+<div class="container-fluid p-0">
+    <div class="hero-section">
+        <div class="hero-content text-center px-3">
+            <h1>Bienvenide, @userNameSession</h1>
+            <p class="mb-3">Gestión de Calidad e Inteligencia Operativa Industrial</p>
+
+            <div class="mb-3">
+                <span class="badge @badgeClase px-3 py-2 fw-bold shadow-sm" style="border-radius: 20px; font-size: 0.85rem;">
+                    <i class="bi bi-person-badge-fill me-1"></i> @rolEtiqueta
+                </span>
+            </div>
+
+            <div class="d-flex justify-content-center gap-3">
+                <a asp-action="ControlDocumentos" class="btn btn-primary px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-2">
+                    <i class="bi bi-file-earmark-text-fill"></i> Ver Documentos
+                </a>
+                <button class="btn btn-outline-light px-4 py-2 fw-bold d-flex align-items-center gap-2">
+                    <i class="bi bi-gear-fill"></i> Configuración
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-5 mt-4">
+        <div class="col-12 text-center">
+            <h4 class="fw-bold text-dark mb-2">Plataforma de Control QualityHub</h4>
+            <p class="text-muted mx-auto" style="max-width: 700px;">
+                Optimiza la trazabilidad y el cumplimiento normativo en entornos industriales mediante nuestra arquitectura polyglot de alta disponibilidad.
+            </p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100 feature-card shadow-sm text-center p-4">
+                <div class="icon-box bg-primary bg-opacity-10">
+                    <i class="bi bi-shield-check text-primary fs-3"></i>
+                </div>
+                <h5 class="fw-bold">Aseguramiento</h5>
+                <p class="text-muted small mb-0">Control riguroso de documentos y estándares ISO para garantizar la excelencia operativa.</p>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100 feature-card shadow-sm text-center p-4">
+                <div class="icon-box bg-warning bg-opacity-10">
+                    <i class="bi bi-tools text-warning fs-3"></i>
+                </div>
+                <h5 class="fw-bold">Mantenimiento</h5>
+                <p class="text-muted small mb-0">Gestión de acciones correctivas y preventivas para minimizar tiempos de inactividad.</p>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100 feature-card shadow-sm text-center p-4">
+                <div class="icon-box bg-success bg-opacity-10">
+                    <i class="bi bi-bar-chart-line text-success fs-3"></i>
+                </div>
+                <h5 class="fw-bold">Productividad</h5>
+                <p class="text-muted small mb-0">Análisis de indicadores de desempeño y KPIs industriales en tiempo real.</p>
+            </div>
+        </div>
+    </div>
+</div>

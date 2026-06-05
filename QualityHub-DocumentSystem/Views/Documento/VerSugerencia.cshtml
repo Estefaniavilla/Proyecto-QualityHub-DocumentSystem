@@ -1,0 +1,43 @@
+﻿@{
+    ViewData["Title"] = "Revisar Sugerencia de Planta";
+    var documento = ViewBag.Documento as QualityHub_DocumentSystem.Models.Documento;
+}
+
+<div class="container mt-5">
+    <div class="card border-warning shadow-sm">
+        <div class="card-header bg-warning text-dark" style="font-weight: bold; font-size: 1.1rem;">
+            <i class="bi bi-exclamation-triangle-fill"></i> Atención Requerida: Sugerencia de Producción
+        </div>
+        <div class="card-body">
+            <h4 class="card-title text-primary mb-3">
+                <i class="bi bi-file-earmark-text"></i> Documento afectado: @documento.Nombre@documento.Extension
+            </h4>
+
+            <p class="card-text text-muted">
+                <strong>ID del Sistema:</strong> @documento.DocumentoID <br />
+                Un operario desde el portal de la planta reportó un problema con este documento el día <strong>@ViewBag.FechaFalla</strong>.
+            </p>
+
+            <hr />
+            <h5 class="mt-4 mb-2 text-dark">Comentario recibido desde la alerta:</h5>
+
+            <!-- Cajón rojo para que resalte el comentario de la falla -->
+            <div class="alert alert-danger shadow-sm" role="alert" style="font-size: 1.1rem;">
+                <i class="bi bi-chat-left-dots-fill me-2"></i> "@ViewBag.ComentarioFalla"
+            </div>
+            <hr />
+
+            <div class="mt-4 d-flex gap-2">
+                <!-- Botón para mandar el documento corregido a la bandeja del Revisador -->
+                <a href="@Url.Action("EnviarARevisador", "Documento", new { id = documento.DocumentoID })" class="btn btn-success fw-bold shadow-sm">
+                    <i class="bi bi-send-fill"></i> Ya lo corregí, Enviar al Revisador
+                </a>
+
+                <!-- Botón para regresar al panel principal -->
+                <a href="@Url.Action("Creador", "Home")" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left-circle"></i> Volver al Panel
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

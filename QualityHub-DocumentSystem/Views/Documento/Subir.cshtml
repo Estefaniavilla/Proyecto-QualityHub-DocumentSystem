@@ -1,0 +1,58 @@
+﻿@{
+    ViewData["Title"] = "Subir Archivo";
+}
+
+<div class="container mt-5" style="max-width: 750px;">
+    <div class="card border-0 shadow-lg" style="border-radius: 15px;">
+        <div class="card-header bg-gradient bg-success text-white p-4" style="border-radius: 15px 15px 0 0;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-white text-success rounded-circle d-flex align-items-center justify-content-center shadow" style="width: 50px; height: 50px;">
+                    <i class="bi bi-cloud-arrow-up-fill fs-3"></i>
+                </div>
+                <div>
+                    <h4 class="mb-0 fw-bold">Subir Archivo Existente</h4>
+                    <p class="mb-0 small text-white-50">Carga documentos físicos validados al repositorio central</p>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-4 bg-white">
+            <form asp-controller="Documento" asp-action="ProcesarSubida" method="post" enctype="multipart/form-data">
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label class="form-label fw-semibold text-secondary small">Código Interno</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-qrcode"></i></span>
+                            <input type="text" name="codigo" class="form-control border-start-0 ps-0" placeholder="Ej: DOC-2026-A" required />
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold text-secondary small">Versión del Archivo</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-git"></i></span>
+                            <input type="text" name="version" class="form-control border-start-0 ps-0 bg-light fw-bold text-success" value="Automática" readonly />
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold text-secondary small">Nombre descriptivo del Documento</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-card-text"></i></span>
+                            <input type="text" name="nombre" class="form-control border-start-0 ps-0" placeholder="Ej: Certificado de Auditoría ISO 9001" required />
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold text-secondary small">Archivo Digital</label>
+                        <div class="input-group">
+                            <input type="file" name="archivo" class="form-control" required />
+                        </div>
+                        <div class="form-text text-muted small mt-1"><i class="bi bi-info-circle me-1"></i>Formatos sugeridos: PDF, Word, Excel. Máximo 25MB.</div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                    <a asp-controller="Home" asp-action="ControlDocumentos" class="btn btn-light px-4 border text-secondary fw-semibold">Cancelar</a>
+                    <button type="submit" class="btn btn-success px-4 fw-semibold shadow-sm"><i class="bi bi-upload me-1"></i> Cargar al Sistema</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

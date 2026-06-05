@@ -1,0 +1,71 @@
+﻿@{
+    ViewData["Title"] = "Redactar Documento";
+}
+
+<div class="container mt-5" style="max-width: 750px;">
+    <div class="card border-0 shadow-lg" style="border-radius: 15px;">
+        <div class="card-header bg-gradient bg-primary text-white p-4" style="border-radius: 15px 15px 0 0;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center shadow" style="width: 50px; height: 50px;">
+                    <i class="bi bi-file-earmark-medical fs-3"></i>
+                </div>
+                <div>
+                    <h4 class="mb-0 fw-bold">Redactar Nuevo Documento</h4>
+                    <p class="mb-0 small text-white-50">Inicia el flujo de control documental del sistema</p>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-4 bg-white">
+            <form asp-controller="Home" asp-action="CrearDocumento" method="post" enctype="multipart/form-data">
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label class="form-label fw-semibold text-secondary small">Código del Documento</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-hash"></i></span>
+                            <input type="text" name="codigo" class="form-control border-start-0 ps-0" placeholder="Ej: REG-CAL-001" required />
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold text-secondary small">Versión Inicial</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-git"></i></span>
+                            <input type="text" name="version" class="form-control border-start-0 ps-0 bg-light fw-bold text-primary" value="Automática" readonly />
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold text-secondary small">Nombre del Documento</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-bookmark-dash"></i></span>
+                            <input type="text" name="nombre" class="form-control border-start-0 ps-0" placeholder="Ej: Manual de Procedimientos Operativos" required />
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold text-secondary small">Tipo / Extensión de Salida</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-filetype-pdf"></i></span>
+                            <select name="extension" class="form-select border-start-0 ps-0" required>
+                                <option value=".pdf" selected>PDF Document (.pdf)</option>
+                                <option value=".docx">Microsoft Word (.docx)</option>
+                                <option value=".xlsx">Microsoft Excel (.xlsx)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-12 mt-4">
+                        <label class="form-label fw-bold text-success small">Adjuntar Archivo Digital (Sincronización File-Server)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-success border-end-0"><i class="bi bi-cloud-arrow-up-fill"></i></span>
+                            <input type="file" name="archivoDigital" class="form-control border-start-0" required />
+                        </div>
+                        <div class="form-text text-muted small ps-1">El archivo se guardará automáticamente en el repositorio compartido para Lizeth.</div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                    <a asp-controller="Home" asp-action="ControlDocumentos" class="btn btn-light px-4 border text-secondary fw-semibold">Cancelar</a>
+                    <button type="submit" class="btn btn-primary px-4 fw-semibold shadow-sm"><i class="bi bi-check-circle me-1"></i> Registrar y Subir Archivo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

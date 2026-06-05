@@ -1,0 +1,141 @@
+﻿@* Views/Home/Index.cshtml *@
+@{
+    Layout = null; // Evita que cargue menús o barras laterales del resto del sistema
+    ViewData["Title"] = "Login";
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QualityHub - @ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <style>
+        body {
+            /* Fondo limpio con un gradiente sutil y elegante */
+            background: linear-gradient(135deg, #f8fafd 0%, #e9f0f8 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        }
+
+        .login-card {
+            background: #ffffff;
+            border-radius: 24px; /* Esquinas más suaves */
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.03), 0 2px 10px rgba(0, 0, 0, 0.02);
+            padding: 3.5rem 2.5rem;
+            width: 100%;
+            max-width: 430px;
+        }
+
+        .brand-icon-wrapper {
+            width: 68px;
+            height: 68px;
+            background: rgba(13, 110, 253, 0.06); /* El color azul con transparencia */
+            color: #0d6efd; /* Tu azul corporativo original */
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin: 0 auto 1.5rem auto;
+        }
+
+        .form-control, .form-select {
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            background-color: #f8fafc;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+            /* Efecto de enfoque azul moderno */
+            .form-control:focus, .form-select:focus {
+                background-color: #ffffff;
+                border-color: #0d6efd;
+                box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.1);
+            }
+
+        .input-group-text {
+            border-radius: 12px;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-login {
+            background: #0d6efd;
+            border: none;
+            border-radius: 12px;
+            padding: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            transition: all 0.2s ease;
+        }
+
+            .btn-login:hover {
+                background: #0b5ed7;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(13, 110, 253, 0.2);
+            }
+    </style>
+</head>
+<body>
+
+    <div class="login-card text-center">
+        <div class="brand-icon-wrapper">
+            <i class="bi bi-shield-lock-fill"></i>
+        </div>
+
+        <h2 class="fw-bold text-dark mb-1" style="letter-spacing: -0.5px;">QualityHub</h2>
+        <p class="text-muted small mb-4">Inicia sesión para continuar al sistema</p>
+
+        <form asp-controller="Home" asp-action="ValidarLogin" method="post" class="text-start">
+
+            <!-- Organización (Fijo y sin flechita) -->
+            <div class="mb-3">
+                <label class="form-label text-muted small fw-bold text-uppercase" style="font-size: 0.75rem;">Organización</label>
+                <div class="input-group">
+                    <span class="input-group-text border-end-0 text-muted"><i class="bi bi-building"></i></span>
+                    <!-- Usamos un input readonly en lugar de un select para quitar la flecha de Bootstrap -->
+                    <input type="text" class="form-control border-start-0 text-dark bg-light" value="TechParts Manufacturing" readonly style="cursor: default;" />
+                </div>
+                <input type="hidden" name="organization" value="1" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label text-muted small fw-bold text-uppercase" style="font-size: 0.75rem;">Usuario</label>
+                <div class="input-group">
+                    <span class="input-group-text border-end-0 text-muted"><i class="bi bi-person"></i></span>
+                    <input type="text" name="username" class="form-control border-start-0" placeholder="Nombre de usuario" required autocomplete="off" />
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label text-muted small fw-bold text-uppercase" style="font-size: 0.75rem;">Contraseña</label>
+                <div class="input-group">
+                    <span class="input-group-text border-end-0 text-muted"><i class="bi bi-key"></i></span>
+                    <input type="password" name="password" class="form-control border-start-0" placeholder="••••••••" required />
+                </div>
+            </div>
+
+            @if (ViewBag.Error != null)
+            {
+                <div class="alert alert-danger p-2 small text-center mb-3 border-0" style="border-radius: 8px;">
+                    <i class="bi bi-exclamation-circle-fill me-1"></i> @ViewBag.Error
+                </div>
+            }
+
+            <button type="submit" class="btn btn-primary btn-login w-100 text-uppercase">
+                Ingresar <i class="bi bi-arrow-right-short ms-1"></i>
+            </button>
+        </form>
+    </div>
+
+</body>
+</html>

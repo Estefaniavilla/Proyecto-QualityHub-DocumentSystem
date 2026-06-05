@@ -1,0 +1,195 @@
+﻿@model IEnumerable<QualityHub_DocumentSystem.Models.Documento>
+@{
+    ViewData["Title"] = "Panel de Autorizaciones";
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<style>
+    .timeline-container::before {
+        content: '';
+        position: absolute;
+        left: 15px;
+        top: 0;
+        height: 100%;
+        width: 2px;
+        background: #e2e8f0;
+    }
+
+    .timeline-item {
+        position: relative;
+        padding-left: 45px;
+        margin-bottom: 1.5rem;
+    }
+
+    .timeline-icon {
+        position: absolute;
+        left: 5px;
+        top: 0;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        border: 4px solid #fff;
+        box-shadow: 0 0 0 2px #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .timeline-content {
+        background: #f8fafc;
+        border-radius: 10px;
+        padding: 12px;
+        border: 1px solid #e2e8f0;
+    }
+</style>
+
+<div class="container-fluid px-0">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold text-dark mb-1"><i class="bi bi-shield-lock-fill text-primary me-2"></i>Panel de Autorización</h3>
+            <p class="text-muted small mb-0">Libere o rechace las versiones de documentos que han completado la etapa de revisión.</p>
+        </div>
+    </div>
+
+    @if (TempData["Mensaje"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm mb-4"><i class="fa-solid fa-circle-check me-2"></i> @TempData["Mensaje"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    }
+
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm p-3 h-100 border-start border-warning border-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="text-muted small text-uppercase fw-bold mb-1">Pendientes de Firma</h6>
+                        <h4 class="fw-bold text-dark mb-0">@Model.Count(d => d.Estado == "Revisado")</h4>
+                    </div>
+                    <div class="bg-warning-subtle p-3 rounded-circle text-warning"><i class="bi bi-clock-history fs-4"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 text-nowrap">
+                    <thead class="bg-light text-secondary small text-uppercase fw-bold border-bottom">
+                        <tr><th class="ps-4 py-3">Código / Documento</th><th>Estado Actual</th><th class="text-end pe-4">Acción de Liberación</th></tr>
+                    </thead>
+                    <tbody class="border-top-0">
+                        @if (!Model.Any(d => d.Estado == "Revisado"))
+                        {
+                            <tr><td colspan="3" class="text-center py-5 text-muted"><i class="fa-solid fa-check-double fa-2x mb-2 text-success opacity-50"></i><br>Bandeja limpia. No hay documentos pendientes de firma.</td></tr>
+                        }
+                        else
+                        {
+                            @foreach (var doc in Model.Where(d => d.Estado == "Revisado"))
+                            {
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="bg-primary-subtle text-primary p-2 rounded"><i class="bi bi-file-earmark-text fs-5"></i></div>
+                                            <div><span class="d-block fw-bold text-dark">@doc.Nombre</span><small class="text-muted">@doc.Codigo</small></div>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-3 fw-semibold">Pendiente de Firma</span></td>
+                                    <td class="text-end pe-4">
+                                        <button class="btn btn-sm btn-success px-3 fw-bold shadow-sm" onclick="abrirFirmaCorporativa(@doc.DocumentoID, '@doc.Nombre', '@doc.Codigo', 'v1.0')"><i class="fa-solid fa-file-signature me-1"></i> Firmar Dictamen</button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Autorizar Empresarial -->
+<div class="modal fade" id="modalAutorizar" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header border-0 bg-dark text-white p-3">
+                <h5 class="modal-title fw-bold mb-0 text-success"><i class="fa-solid fa-signature me-2"></i> Panel de Firma Institucional</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 bg-light d-flex gap-4">
+
+                <div class="w-50 border-end pe-4">
+                    <p class="text-muted fw-bold mb-3" style="font-size: 0.75rem; letter-spacing: 1px;">TRAZABILIDAD DEL DOCUMENTO (HISTORIAL)</p>
+                    <div class="timeline-container position-relative" id="authTimeline">
+                        <div class="text-center text-muted mt-5"><i class="fa-solid fa-spinner fa-spin fa-2x mb-2"></i><br>Cargando historial...</div>
+                    </div>
+                </div>
+
+                <div class="w-50 ps-2">
+                    <div class="bg-white p-3 rounded shadow-sm mb-4 border border-secondary">
+                        <p class="text-muted fw-bold mb-2" style="font-size: 0.75rem;">DOCUMENTO A LIBERAR</p>
+                        <div class="d-flex mb-2"><span class="fw-bold me-2 text-secondary" style="width: 70px;">Doc:</span><span class="fw-bold text-dark" id="authCodigoNombre">--</span></div>
+                        <div class="d-flex"><span class="fw-bold me-2 text-secondary" style="width: 70px;">Versión:</span><span class="badge bg-primary rounded-pill px-3" id="authVersion">--</span></div>
+                    </div>
+
+                    <form method="post" action="/Home/ProcesarAutorizacion">
+                        <input type="hidden" name="documentoId" id="authDocId">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-dark">Dictamen de Dirección:</label>
+                            <select class="form-select border-success shadow-sm" name="dictamen" required style="border-radius: 8px;">
+                                <option value="" disabled selected>-- Seleccione --</option>
+                                <option value="Autorizado" class="fw-bold text-success">✔️ Autorizar y Publicar (Enviar a PHP)</option>
+                                <option value="Rechazado" class="fw-bold text-danger">❌ Rechazar (Regresar al Revisador)</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-dark">Comentarios Finales:</label>
+                            <textarea class="form-control border-secondary shadow-sm" name="comentarios" rows="3" style="border-radius: 8px; resize: none;" required placeholder="Escriba los comentarios de la dirección..."></textarea>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="submit" class="btn btn-success fw-bold px-4 w-100 shadow-sm" style="border-radius: 8px; font-size: 1.1rem;"><i class="fa-solid fa-check-circle me-2"></i>Aplicar Firma Electrónica</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function abrirFirmaCorporativa(id, nombre, codigo, version) {
+        document.getElementById('authDocId').value = id;
+        document.getElementById('authCodigoNombre').innerText = codigo + " - " + nombre;
+        document.getElementById('authVersion').innerText = version || 'v1.0';
+        document.getElementById('authTimeline').innerHTML = "<div class='text-center text-muted mt-5'><i class='fa-solid fa-spinner fa-spin fa-2x mb-2'></i><br>Cargando historial...</div>";
+
+        new bootstrap.Modal(document.getElementById('modalAutorizar')).show();
+
+        fetch(`/Home/ObtenerHistorialDocumento?documentoId=${id}`)
+        .then(r => r.json())
+        .then(data => {
+            if(data.success && data.historial.length > 0) {
+                let lineHtml = '';
+                data.historial.forEach(mov => {
+                    let color = mov.accion.includes('Autoriz') || mov.accion.includes('Aprobad') ? 'success' : (mov.accion.includes('Rechaz') ? 'danger' : 'primary');
+                    let icon = color === 'success' ? 'check' : (color === 'danger' ? 'xmark' : 'upload');
+
+                    lineHtml += `
+                    <div class="timeline-item">
+                        <div class="timeline-icon bg-${color} text-white"><i class="fa-solid fa-${icon}" style="font-size: 0.6rem;"></i></div>
+                        <div class="timeline-content">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold text-${color}" style="font-size: 0.85rem;">${mov.accion}</span>
+                                <span class="text-muted" style="font-size: 0.7rem;">${mov.fecha}</span>
+                            </div>
+                            <div class="text-muted mb-2" style="font-size: 0.75rem;"><i class="fa-solid fa-user me-1"></i> ${mov.usuario}</div>
+                            <div class="bg-white p-2 rounded text-dark border" style="font-size: 0.8rem;">${mov.comentario || 'Sin comentarios'}</div>
+                        </div>
+                    </div>`;
+                });
+                document.getElementById('authTimeline').innerHTML = lineHtml;
+            }
+        });
+    }
+</script>

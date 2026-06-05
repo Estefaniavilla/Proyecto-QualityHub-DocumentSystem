@@ -1,0 +1,80 @@
+﻿@model IEnumerable<QualityHub_DocumentSystem.Models.Documento>
+
+<div class="container mt-4">
+    <h2><i class="bi bi-shield-check text-success"></i> Panel de Revisión de Documentos</h2>
+    <p class="text-muted">Analiza los documentos enviados por los creadores y envíalos a autorización final.</p>
+
+    <div class="card shadow-sm mt-4">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0"><i class="bi bi-list-task"></i> Documentos en mi Bandeja</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID Documento</th>
+                            <th>Estado Actual</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            @foreach (var doc in Model)
+                            {
+                                <tr>
+                                    <td><strong>Documento N° @doc.DocumentoID</strong></td>
+                                    <td>
+                                        @if (doc.Estado == "Pendiente Revisión")
+                                        {
+                                            <span class="badge bg-primary shadow-sm"><i class="bi bi-hourglass-split"></i> Pendiente Revisión</span>
+                                        }
+                                        else if (doc.Estado == "Pendiente Autorización")
+                                        {
+                                            <span class="badge bg-info text-dark"><i class="bi bi-forward-fill"></i> Ya enviado a Autorizador</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">@doc.Estado</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        @if (doc.Estado == "Pendiente Revisión")
+                                        {
+                                            <div class="d-flex justify-content-center gap-2">
+                                                <!-- Botón para que el revisador vea o evalúe el archivo -->
+                                                <a href="@Url.Action("Dictaminar", "Documento", new { id = doc.DocumentoID })" class="btn btn-sm btn-outline-dark" title="Ver archivo">
+                                                    <i class="bi bi-eye"></i> Ver / Dictaminar
+                                                </a>
+
+                                                <!-- Botón para enviarlo al siguiente nivel (Autorizador) -->
+                                                <a href="@Url.Action("EnviarAAutorizador", "Documento", new { id = doc.DocumentoID })" class="btn btn-sm btn-success fw-bold" title="Aprobar y mandar a la etapa final">
+                                                    <i class="bi bi-send-check-fill"></i> Enviar a Autorizador
+                                                </a>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-sm btn-outline-secondary" disabled>
+                                                <i class="bi bi-lock-fill"></i> Sin acciones
+                                            </button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="3" class="text-center p-4 text-muted">
+                                    <i class="bi bi-info-circle fs-4 d-block mb-2"></i> No hay documentos en tu bandeja por ahora.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

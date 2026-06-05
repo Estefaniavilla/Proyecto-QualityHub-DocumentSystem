@@ -1,0 +1,239 @@
+﻿@model IEnumerable<QualityHub_DocumentSystem.Models.Documento>
+
+<div class="container mt-4">
+    <h2><i class="bi bi-file-earmark-person-fill text-primary"></i> Panel del Creador</h2>
+    <p class="text-muted">Gestiona tus documentos y realiza un seguimiento de sus versiones.</p>
+
+    <div class="row my-4">
+        <div class="col-md-6 mb-3">
+            <div class="card border-primary h-100 shadow-sm">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <h5 class="card-title text-primary"><i class="bi bi-file-earmark-plus"></i> Crear Documento Nuevo</h5>
+                        <p class="card-text text-muted small">Redacta un documento desde cero en el sistema.</p>
+                    </div>
+                    <a href="@Url.Action("Crear", "Documento")" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Crear</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card border-success h-100 shadow-sm">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <h5 class="card-title text-success"><i class="bi bi-cloud-upload"></i> Subir Nuevo Documento</h5>
+                        <p class="card-text text-muted small">Sube un archivo existente (PDF, Word, etc.).</p>
+                    </div>
+                    <a href="@Url.Action("Subir", "Documento")" class="btn btn-success"><i class="bi bi-upload"></i> Subir</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0"><i class="bi bi-folder-symlink"></i> Mis Documentos</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID Documento</th>
+                            <th>Estado Actual</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            @foreach (var doc in Model)
+                            {
+                                <tr>
+                                    <td><strong>Documento N° @doc.DocumentoID</strong></td>
+                                    <td>
+                                        @if (doc.Estado == "Borrador")
+                                        {
+                                            <span class="badge bg-warning text-dark"><i class="bi bi-pencil"></i> Borrador</span>
+                                        }
+                                        else if (doc.Estado == "Aprobado")
+                                        {
+                                            <span class="badge bg-success"><i class="bi bi-check-circle"></i> Aprobado</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-info text-dark"><i class="bi bi-eye"></i> En Revisión</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="d-flex justify-content-center gap-2">
+                                            @if (doc.Estado == "Borrador")
+                                            {
+                                                <a href="@Url.Action("Editar", "Documento", new { id = doc.DocumentoID })" class="btn btn-sm btn-outline-warning" title="Editar Metadatos">
+                                                    <i class="bi bi-pencil-square"></i> Editar
+                                                </a>
+
+                                                <button class="btn btn-sm btn-outline-primary" onclick="abrirModalCarga('@doc.DocumentoID')" title="Subir archivo físico">
+                                                    <i class="bi bi-file-earmark-arrow-up"></i> Cargar Archivo
+                                                </button>
+
+                                                <button class="btn btn-sm btn-success" onclick="enviarAlEcosistema('@doc.DocumentoID')" title="Enviar a revisión">
+                                                    <i class="bi bi-send-fill"></i> Enviar a Revisión
+                                                </button>
+                                            }
+                                            // ==========================================================
+                                            // ESTA ES LA NUEVA VALIDACIÓN QUE AGREGAMOS PARA LA ALERTA
+                                            // ==========================================================
+                                            else if (doc.Estado == "En Revisión")
+                                            {
+                                                <a href="@Url.Action("VerSugerencia", "Documento", new { id = doc.DocumentoID })" class="btn btn-sm btn-warning fw-bold shadow-sm" title="Revisar sugerencia de planta">
+                                                    <i class="bi bi-exclamation-triangle-fill"></i> Ver Sugerencia
+                                                </a>
+                                            }
+                                            // ==========================================================
+                                            else
+                                            {
+                                                <button class="btn btn-sm btn-outline-secondary" disabled title="No se puede modificar un documento aprobado">
+                                                    <i class="bi bi-lock-fill"></i> Protegido
+                                                </button>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="3" class="text-center p-4 text-muted">
+                                    <i class="bi bi-info-circle fs-4 d-block mb-2"></i> No hay documentos disponibles.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalCargarArchivo" tabindex="-1" aria-labelledby="modalCargarArchivoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalCargarArchivoLabel"><i class="bi bi-cloud-arrow-up-fill"></i> Cargar Archivo Físico</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formCargarArchivo" enctype="multipart/form-data">
+                    <input type="hidden" id="modalDocumentoId" name="documentoId" />
+
+                    <div class="mb-3">
+                        <label for="archivoFisico" class="form-label fw-bold">Selecciona el documento (PDF, Word, Excel):</label>
+                        <input class="form-control" type="file" id="archivoFisico" name="archivoFisico" required>
+                    </div>
+
+                    <div class="text-end">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-upload"></i> Subir Archivo</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        // Instancia del Modal de Bootstrap
+        let miModalCarga;
+
+        document.addEventListener("DOMContentLoaded", function () {
+            miModalCarga = new bootstrap.Modal(document.getElementById('modalCargarArchivo'));
+
+            // Manejar el envío del formulario de carga vía AJAX
+            document.getElementById('formCargarArchivo').addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                const formData = new FormData(this);
+
+                fetch('/Documento/CargarArchivo', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        miModalCarga.hide();
+                        Swal.fire({
+                            icon: 'success',
+                            title: '¡Archivo Cargado!',
+                            text: 'El archivo físico se asoció correctamente al documento.',
+                            timer: 2000,
+                            showConfirmButton: false
+                        }).then(() => {
+                            location.reload(); // Recarga la tabla para ver cambios
+                        });
+                    } else {
+                        Swal.fire('Error', data.message || 'No se pudo subir el archivo.', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire('Error', 'Ocurrió un problema de red al subir el archivo.', 'error');
+                });
+            });
+        });
+
+        // Función para abrir el modal asignando el ID correcto
+        function abrirModalCarga(id) {
+            document.getElementById('modalDocumentoId').value = id;
+            document.getElementById('archivoFisico').value = ''; // Limpiar input
+            miModalCarga.show();
+        }
+
+        // Función para cambiar el estado a "En Revisión"
+        function enviarAlEcosistema(id) {
+            Swal.fire({
+                title: '¿Enviar a Revisión?',
+                text: "El documento cambiará su estado y pasará al flujo de evaluación (Rol 2). Ya no podrás editarlo.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#198754',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, enviar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch('/Documento/EnviarAlEcosistema', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `documentoId=${id}`
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: '¡Enviado!',
+                                text: 'El documento ahora está en el ecosistema de revisión.',
+                                timer: 2000,
+                                showConfirmButton: false
+                            }).then(() => {
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire('Error', data.message || 'No se pudo enviar el documento.', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        Swal.fire('Error', 'Error de comunicación con el servidor.', 'error');
+                    });
+                }
+            });
+        }
+    </script>
+}
