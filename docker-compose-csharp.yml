@@ -16,8 +16,10 @@ services:
 
   csharp-app:
     build:
-      context: C:\Users\estef\source\repos\QualityHub-DocumentSystem\QualityHub-DocumentSystem
-      dockerfile: Dockerfile
+         build:
+         context: ./QualityHub-DocumentSystem
+    
+         dockerfile: Dockerfile
     container_name: csharp_app_container
     ports:
       - "7083:8080"       

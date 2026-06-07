@@ -276,9 +276,81 @@
         .act-download { background: rgba(139, 92, 246, 0.12); color: #8b5cf6; }
         .act-download:hover { background: #8b5cf6; color: white; transform: translateY(-2px); }
 
+        /* --- SNIPPET DE COINCIDENCIA (estilo Google) --- */
+        .search-snippet-block {
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: var(--accent-glow);
+            border-left: 3px solid var(--primary-accent);
+            border-radius: 0 8px 8px 0;
+            font-size: 12.5px;
+            color: var(--text-muted);
+            line-height: 1.55;
+            max-width: 100%;
+            word-break: break-word;
+        }
+        .search-snippet-block strong {
+            color: var(--primary-accent);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
         .modal-premium-content {
             background: var(--bg-card); border: 1px solid var(--border-color);
             border-radius: 20px; padding: 15px;
+        }
+
+        /* --- MODAL DE METADATOS: GRID DE CARDS --- */
+        .meta-section-title {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--primary-accent);
+            padding: 4px 0 8px 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 12px;
+        }
+        .meta-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+        .meta-grid.full-width {
+            grid-template-columns: 1fr;
+        }
+        .meta-card {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 10px 14px;
+            min-width: 0;
+        }
+        .meta-card-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+            margin-bottom: 3px;
+            display: block;
+        }
+        .meta-card-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+            word-break: break-word;
+            line-height: 1.4;
+        }
+        .meta-card-value.version-badge {
+            display: inline-block;
+            background: rgba(37, 99, 235, 0.12);
+            color: var(--primary-accent);
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 13px;
         }
 
         /* --- ESTILOS DE PAGINACIÓN PREMIUM --- */
@@ -350,7 +422,7 @@
                     <label class="custom-label-spec">Área / Depto</label>
                     <select id="login-departamento" class="form-select custom-input-spec">
                         <option value="Calidad">Calidad</option>
-                        <option value="Auditoría">Auditoría</option>
+                        <option value="Auditoria">Auditoría</option>
                         <option value="Mantenimiento">Mantenimiento</option>
                     </select>
                 </div>
@@ -389,6 +461,7 @@
                 </div>
                 <div class="mb-4">
                     <label class="custom-label-spec">Fecha de Registro</label>
+                    <!-- El buscador espera filtrar bien. El datepicker envía en formato YYYY-MM-DD -->
                     <input type="date" id="search-date" class="form-control custom-input-spec">
                 </div>
                 <button class="btn btn-primary btn-action-primary w-100" style="background:#2563eb; font-weight:700;" onclick="cargarDocumentos(1)">
@@ -479,57 +552,16 @@
         </main>
     </div>
 
-    <!-- MODAL DE CONSULTA DE METADATOS (SOLO LECTURA) -->
+    <!-- MODAL DE CONSULTA DE METADATOS DINÁMICOS -->
     <div class="modal fade" id="metadataBootstrapModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content modal-premium-content">
                 <div class="modal-header border-0 pb-0">
                     <h5 class="fw-800" style="font-size:18px;"><i class="fa-solid fa-file-invoice text-primary me-2"></i>Consulta de Metadatos</h5>
                     <button type="button" class="btn-close" onclick="cerrarModal()"></button>
                 </div>
-                <div class="modal-body">
-                    <input type="hidden" id="modal-archivo-origen">
-                    
-                    <div class="mb-2">
-                        <label class="custom-label-spec">Código Interno (ISO)</label>
-                        <input type="text" id="modal-codigo-doc" class="form-control custom-input-spec" readonly style="opacity:0.75;">
-                    </div>
-                    <div class="mb-2">
-                        <label class="custom-label-spec">Identificador del Documento</label>
-                        <input type="text" id="modal-nombre" class="form-control custom-input-spec" readonly style="opacity:0.75;">
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-6">
-                            <label class="custom-label-spec">Edición / Versión</label>
-                            <input type="text" id="modal-version" class="form-control custom-input-spec" readonly style="opacity:0.75;">
-                        </div>
-                        <div class="col-6">
-                            <label class="custom-label-spec">Tamaño Físico</label>
-                            <input type="text" id="modal-tamano" class="form-control custom-input-spec" readonly style="opacity:0.75;">
-                        </div>
-                    </div>
-                    <div class="mb-2">
-                        <label class="custom-label-spec">Responsable de Carga</label>
-                        <input type="text" id="modal-autor" class="form-control custom-input-spec" readonly style="opacity:0.75;">
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-6">
-                            <label class="custom-label-spec">Compañía Destinataria</label>
-                            <input type="text" id="modal-compania" class="form-control custom-input-spec" readonly style="opacity:0.75;">
-                        </div>
-                        <div class="col-6">
-                            <label class="custom-label-spec">Departamento Destinatario</label>
-                            <input type="text" id="modal-departamento" class="form-control custom-input-spec" readonly style="opacity:0.75;">
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="custom-label-spec">Nivel de Seguridad</label>
-                        <input type="text" id="modal-clasificacion" class="form-control custom-input-spec" readonly style="opacity:0.75;">
-                    </div>
-                    <div>
-                        <label class="custom-label-spec">Estatus de Validación</label>
-                        <input type="text" id="modal-autorizado" class="form-control custom-input-spec" readonly style="opacity:0.75; font-weight:700;" value="Aprobada">
-                    </div>
+                <div class="modal-body" id="dynamic-metadata-body" style="max-height: 400px; overflow-y: auto;">
+                    <!-- Los campos de metadatos se inyectarán de forma dinámica aquí -->
                 </div>
                 <div class="modal-footer border-0 pt-0">
                     <button type="button" class="btn btn-secondary px-4 w-100" style="border-radius:9px; font-size:14px; font-weight:600;" onclick="cerrarModal()">Cerrar Ventana</button>
@@ -569,7 +601,6 @@
             const companiaSeleccionada = document.getElementById('login-compania').value;
             const deptoSeleccionada = document.getElementById('login-departamento').value;
 
-            // Enviamos usuario, clave, compañía y departamento para la validación cruzada estricta
             const res = await fetch('/api/login', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -595,7 +626,7 @@
                 document.getElementById('user-banner').innerHTML = 
                     `<div class="d-flex align-items-center gap-2"><i class="fa-solid fa-user-check text-primary"></i> Operador: <span class="fw-bold text-uppercase">${datosUsuario.usuario}</span></div>
                      <div class="d-flex gap-3"><span>Empresa: <strong class="fw-bold">${datosUsuario.compania}</strong></span><span>Área: <strong class="fw-bold">${datosUsuario.departamento}</strong></span></div>`;
-                
+
                 cargarDocumentos(1);
             } else {
                 alert(data.error || "Credenciales de acceso inválidas");
@@ -610,7 +641,6 @@
             const tipoFiltro = document.getElementById('search-type').value;
             const fecha = document.getElementById('search-date').value;
             
-            // Construimos la URL enviando la paginación y todos los filtros al servidor de Python
             let url = `/api/buscar?compania=${encodeURIComponent(datosUsuario.compania)}&departamento=${encodeURIComponent(datosUsuario.departamento)}&page=${paginaActual}&per_page=${porPagina}`;
             
             if (nombre) url += `&nombre=${encodeURIComponent(nombre)}`;
@@ -632,123 +662,233 @@
                 totalPaginas = responseData.pages || 1;
                 paginaActual = responseData.page || 1;
                 
-                // Actualizar contadores dinámicos globales desde la respuesta del servidor
-                const kpis = responseData.kpis || { totales: 0, autorizados: 0, revision: 0 };
-                document.getElementById('kpi-totales').innerText = kpis.totales;
-                document.getElementById('kpi-autorizados').innerText = kpis.autorizados;
-                document.getElementById('kpi-revision').innerText = kpis.revision;
+                // Actualizar contadores dinámicos globales desde la respuesta
+                document.getElementById('kpi-totales').innerText = responseData.kpis.totales;
+                document.getElementById('kpi-autorizados').innerText = responseData.kpis.autorizados;
+                document.getElementById('kpi-revision').innerText = responseData.kpis.revision;
 
-                const tbody = document.getElementById('document-rows');
-                tbody.innerHTML = '';
+                // Actualizar información de paginación
+                const startRange = totalDocs === 0 ? 0 : (paginaActual - 1) * porPagina + 1;
+                const endRange = Math.min(paginaActual * porPagina, totalDocs);
+                document.getElementById('pagination-info').innerText = `Mostrando del ${startRange} al ${endRange} de ${totalDocs} documentos`;
+
+                // Renderizar tabla
+                const rowsContainer = document.getElementById('document-rows');
+                rowsContainer.innerHTML = '';
 
                 if (documentos.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-5"><i class="fa-solid fa-folder-open d-block fs-3 mb-2 opacity-50"></i> Sin registros documentales en este segmento.</td></tr>`;
-                    actualizarPaginacionUI(0, 0);
-                    return;
+                    rowsContainer.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-4"><i class="fa-solid fa-circle-info me-2"></i>No se encontraron documentos</td></tr>`;
+                } else {
+                    documentos.forEach(doc => {
+                        const tr = document.createElement('tr');
+                        
+                        // Badge para la extensión
+                        const extClass = doc.tipo === 'PDF' ? 'ext-pdf' : doc.tipo === 'Word' ? 'ext-word' : doc.tipo === 'Excel' ? 'ext-excel' : 'ext-power';
+                        const extIcon = doc.tipo === 'PDF' ? 'fa-file-pdf' : doc.tipo === 'Word' ? 'fa-file-word' : doc.tipo === 'Excel' ? 'fa-file-excel' : 'fa-file-powerpoint';
+                        
+                        // Badge para el estatus
+                        const statusClass = doc.estado === 'Autorizado' ? 'pill-auth' : 'pill-rev';
+                        
+                        // Formatear la fecha para mostrar en la tabla (si viene en YYYY-MM-DD podemos convertirla a DD/MM/YYYY si se prefiere visualmente)
+                        let fechaVisual = doc.fecha;
+                        if (fechaVisual && fechaVisual.includes('-')) {
+                            const partes = fechaVisual.split('-');
+                            if (partes.length === 3) {
+                                fechaVisual = `${partes[2]}/${partes[1]}/${partes[0]}`;
+                            }
+                        }
+
+                        // Bloque del snippet de coincidencia (solo se muestra si hay una búsqueda activa)
+                        const snippetHtml = doc.snippet_match
+                            ? `<div class="search-snippet-block">${doc.snippet_match}</div>`
+                            : '';
+
+                        tr.innerHTML = `
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="doc-extension-badge ${extClass}">
+                                        <i class="fa-solid ${extIcon}"></i> ${doc.tipo}
+                                    </span>
+                                    <div style="flex:1; min-width:0;">
+                                        <div class="fw-bold mb-1" style="font-size:15px;">${doc.nombre}</div>
+                                        <div class="small text-muted">Cod: ${doc.codigo_doc} | Versión: ${doc.version}</div>
+                                        ${snippetHtml}
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-center small fw-600 text-muted">${fechaVisual}</td>
+                            <td class="text-center">
+                                <span class="status-pill-spec ${statusClass}">${doc.estado}</span>
+                            </td>
+                            <td class="text-center">
+                                <div class="actions-btn-group">
+                                    <a href="/api/ver/${encodeURIComponent(doc.archivo_descarga)}" target="_blank" class="btn-action-pill act-view" title="Visualizar">
+                                        <i class="fa-solid fa-eye"></i> Ver
+                                    </a>
+                                    <button onclick="mostrarMetadatos('${doc.archivo_descarga}')" class="btn-action-pill act-info" title="Detalles">
+                                        <i class="fa-solid fa-info-circle"></i> Info
+                                    </button>
+                                    <a href="/api/descargar/${encodeURIComponent(doc.archivo_descarga)}" class="btn-action-pill act-download" title="Descargar">
+                                        <i class="fa-solid fa-download"></i> Descargar
+                                    </a>
+                                </div>
+                            </td>
+                        `;
+                        rowsContainer.appendChild(tr);
+                    });
                 }
 
-                documentos.forEach(doc => {
-                    const archivoEncodeado = encodeURIComponent(doc.archivo_descarga || '');
-                    
-                    // Detección del tipo de documento usando archivo_descarga para máxima precisión
-                    const archivoNombre = doc.archivo_descarga ? String(doc.archivo_descarga).toUpperCase() : '';
-                    const tipDoc = doc.tipo ? String(doc.tipo).toUpperCase() : '';
-                    
-                    let badgeExtension = '';
-                    if (archivoNombre.endsWith('.PDF') || tipDoc === 'PDF') {
-                        badgeExtension = `<span class="doc-extension-badge ext-pdf"><i class="fa-solid fa-file-pdf"></i> PDF</span>`;
-                    } else if (archivoNombre.endsWith('.XLS') || archivoNombre.endsWith('.XLSX') || tipDoc === 'XLS' || tipDoc === 'XLSX' || tipDoc === 'EXCEL') {
-                        badgeExtension = `<span class="doc-extension-badge ext-excel"><i class="fa-solid fa-file-excel"></i> Excel</span>`;
-                    } else if (archivoNombre.endsWith('.PPT') || archivoNombre.endsWith('.PPTX') || tipDoc === 'PPT' || tipDoc === 'PPTX' || tipDoc === 'POWERPOINT') {
-                        badgeExtension = `<span class="doc-extension-badge ext-power"><i class="fa-solid fa-file-powerpoint"></i> PPTX</span>`;
-                    } else if (archivoNombre.endsWith('.DOC') || archivoNombre.endsWith('.DOCX') || tipDoc === 'DOC' || tipDoc === 'DOCX' || tipDoc === 'WORD') {
-                        badgeExtension = `<span class="doc-extension-badge ext-word"><i class="fa-solid fa-file-word"></i> Word</span>`;
-                    } else {
-                        badgeExtension = `<span class="doc-extension-badge ext-word"><i class="fa-solid fa-file-lines"></i> ${tipDoc || 'Otro'}</span>`;
+                // Renderizar controles de paginación
+                const pagList = document.getElementById('pagination-list');
+                pagList.innerHTML = '';
+
+                // Botón Anterior
+                const prevLi = document.createElement('li');
+                prevLi.className = `page-item ${paginaActual === 1 ? 'disabled' : ''}`;
+                prevLi.innerHTML = `<a class="page-link" href="#" onclick="cargarDocumentos(${paginaActual - 1})"><i class="fa-solid fa-chevron-left"></i></a>`;
+                pagList.appendChild(prevLi);
+
+                // Páginas
+                for (let i = 1; i <= totalPaginas; i++) {
+                    const li = document.createElement('li');
+                    li.className = `page-item ${paginaActual === i ? 'active' : ''}`;
+                    li.innerHTML = `<a class="page-link" href="#" onclick="cargarDocumentos(${i})">${i}</a>`;
+                    pagList.appendChild(li);
+                }
+
+                // Botón Siguiente
+                const nextLi = document.createElement('li');
+                nextLi.className = `page-item ${paginaActual === totalPaginas ? 'disabled' : ''}`;
+                nextLi.innerHTML = `<a class="page-link" href="#" onclick="cargarDocumentos(${paginaActual + 1})"><i class="fa-solid fa-chevron-right"></i></a>`;
+                pagList.appendChild(nextLi);
+
+            } catch (err) {
+                console.error("Error cargando documentos: ", err);
+            }
+        }
+
+        async function mostrarMetadatos(archivo) {
+            try {
+                const res = await fetch(`/api/metadatos/${encodeURIComponent(archivo)}`);
+                if (!res.ok) {
+                    alert("No se pudieron obtener los metadatos del documento.");
+                    return;
+                }
+                const metadatos = await res.json();
+
+                const container = document.getElementById('dynamic-metadata-body');
+                container.innerHTML = '';
+
+                // Campos internos que nunca se muestran
+                const CAMPOS_OCULTOS = new Set(['texto_extraido', '_id', 'snippet_match']);
+
+                // Orden lógico de los campos prioritarios con sus etiquetas en español
+                const ORDEN_PRIORITARIO = [
+                    { key: 'nombre',            label: 'Nombre del Documento' },
+                    { key: 'codigo_doc',         label: 'Código Interno (ISO)' },
+                    { key: 'version',            label: 'Versión del Documento' },
+                    { key: 'fecha',              label: 'Fecha de Alta' },
+                    { key: 'tamano',             label: 'Peso del Archivo' },
+                    { key: 'tipo',               label: 'Tipo / Formato' },
+                    { key: 'estado',             label: 'Estado de Validación' },
+                    { key: 'compania_destino',   label: 'Compañía Destinataria' },
+                    { key: 'departamento',       label: 'Departamento' },
+                    { key: 'archivo_descarga',   label: 'Archivo Físico' },
+                    { key: 'autor_subida',       label: 'Responsable de Carga' },
+                    { key: 'clasificacion',      label: 'Clasificación' },
+                ];
+
+                // Función para detectar valores vacíos
+                function esVacio(val) {
+                    if (val===null||val===undefined) return true;
+                    const s = String(val).trim();
+                    return s===''||s==='None'||s==='null'||s==='undefined';
+                }
+
+                // Helper para crear una *card* de metadato
+                function crearCard(label, value, esVersion=false) {
+                    const valHtml = esVersion
+                        ? `<span class="meta-card-value version-badge">${value}</span>`
+                        : `<span class="meta-card-value">${value}</span>`;
+                    return `
+                        <div class="meta-card">
+                            <span class="meta-card-label">${label}</span>
+                            ${valHtml}
+                        </div>`;
+                }
+
+                // ---------- SECCIÓN 1: Información del Sistema ----------
+                let htmlPrincipales = '';
+                const clavesMostradas = new Set();
+
+                for (const campo of ORDEN_PRIORITARIO) {
+                    const val = metadatos[campo.key];
+                    if (!esVacio(val)) {
+                        htmlPrincipales += crearCard(campo.label, val, campo.key === 'version');
+                        clavesMostradas.add(campo.key);
                     }
-                    
-                    let botonVer = `<a href="/api/ver/${archivoEncodeado}" target="_blank" class="btn-action-pill act-view"><i class="fa-solid fa-eye"></i> Ver</a>`;
-                    let botonMeta = `<button onclick="abrirMetadatos('${archivoEncodeado}')" class="btn-action-pill act-info"><i class="fa-solid fa-circle-info"></i> Info</button>`;
+                }
 
-                    tbody.innerHTML += `
-                        <tr>
-                            <td><div class="d-flex align-items-center gap-3">${badgeExtension}<span class="fw-600 text-main">${doc.nombre || 'Sin título catalogado'}</span></div></td>
-                            <td class="text-center text-muted fw-600 font-monospace">${doc.fecha || '2026-05-27'}</td>
-                            <td class="text-center"><span class="status-pill-spec pill-auth">Aprobada</span></td>
-                            <td><div class="actions-btn-group">${botonVer} ${botonMeta}</div></td>
-                        </tr>
+                if (htmlPrincipales) {
+                    const seccion = document.createElement('div');
+                    seccion.innerHTML = `
+                        <div class="meta-section-title"><i class="fa-solid fa-id-card me-1"></i> Información del Sistema</div>
+                        <div class="meta-grid">${htmlPrincipales}</div>
                     `;
-                });
+                    container.appendChild(seccion);
+                }
 
-                // Actualizar barra de paginación
-                actualizarPaginacionUI(totalDocs, documentos.length);
-            } catch (error) {
-                console.error("Error cargando documentos:", error);
+                // ---------- SECCIÓN 2: Metadatos extraídos del archivo ----------
+                // Campos de OS que queremos presentar con etiquetas amigables
+                const ETIQUETAS_OS = {
+                    peso_real_bytes:              'Tamaño en Bytes',
+                    ultima_modificacion_sistema:  'Última Modificación (OS)',
+                    creacion_sistema:             'Fecha Creación (OS)',
+                    extension_archivo:            'Extensión Detectada',
+                };
+
+                let htmlDinamicos = '';
+                let hayDinamicos = false;
+
+                for (const [clave, valor] of Object.entries(metadatos)) {
+                    if (CAMPOS_OCULTOS.has(clave)) continue;
+                    if (clavesMostradas.has(clave)) continue;
+                    if (esVacio(valor)) continue;
+
+                    // Etiqueta amigable: usar mapa de OS primero, luego transformar snake_case
+                    const label = ETIQUETAS_OS[clave]
+                        || clave.replace(/_/g, ' ').replace(/\b\w/g, c=>c.toUpperCase());
+
+                    htmlDinamicos += crearCard(label, valor);
+                    hayDinamicos = true;
+                }
+
+                if (hayDinamicos) {
+                    const seccion2 = document.createElement('div');
+                    seccion2.innerHTML = `
+                        <div class="meta-section-title"><i class="fa-solid fa-tags me-1"></i> Metadatos Extraídos del Archivo</div>
+                        <div class="meta-grid">${htmlDinamicos}</div>
+                    `;
+                    container.appendChild(seccion2);
+                }
+
+                if (container.innerHTML === '') {
+                    container.innerHTML = `<p class="text-muted text-center py-3">No se encontraron metadatos para este documento.</p>`;
+                }
+
+                if (!bsModalInstance) {
+                    bsModalInstance = new bootstrap.Modal(document.getElementById('metadataBootstrapModal'));
+                }
+                bsModalInstance.show();
+            } catch (err) {
+                console.error("Error al cargar metadatos: ", err);
             }
-        }
-
-        function actualizarPaginacionUI(totalDocs, itemsEnPagina) {
-            const info = document.getElementById('pagination-info');
-            const list = document.getElementById('pagination-list');
-            
-            if (totalDocs === 0) {
-                info.innerText = "Mostrando 0 de 0 registros";
-                list.innerHTML = '';
-                return;
-            }
-
-            const primerRegistro = (paginaActual - 1) * porPagina + 1;
-            const ultimoRegistro = primerRegistro + itemsEnPagina - 1;
-            info.innerText = `Mostrando ${primerRegistro}-${ultimoRegistro} de ${totalDocs} registros`;
-
-            let html = '';
-            
-            // Botón Anterior
-            const prevDisabled = paginaActual === 1 ? 'disabled' : '';
-            html += `<li class="page-item ${prevDisabled}"><a class="page-link" href="#" onclick="cambiarPagina(${paginaActual - 1}); return false;"><i class="fa-solid fa-angle-left"></i></a></li>`;
-            
-            // Botones de Números de Página
-            for (let i = 1; i <= totalPaginas; i++) {
-                const activeClass = paginaActual === i ? 'active' : '';
-                html += `<li class="page-item ${activeClass}"><a class="page-link" href="#" onclick="cambiarPagina(${i}); return false;">${i}</a></li>`;
-            }
-            
-            // Botón Siguiente
-            const nextDisabled = paginaActual === totalPaginas ? 'disabled' : '';
-            html += `<li class="page-item ${nextDisabled}"><a class="page-link" href="#" onclick="cambiarPagina(${paginaActual + 1}); return false;"><i class="fa-solid fa-angle-right"></i></a></li>`;
-            
-            list.innerHTML = html;
-        }
-
-        function cambiarPagina(nuevaPagina) {
-            if (nuevaPagina < 1 || nuevaPagina > totalPaginas) return;
-            cargarDocumentos(nuevaPagina);
-        }
-
-        async function abrirMetadatos(archivo) {
-            const res = await fetch(`/api/metadatos/${archivo}`);
-            if (!res.ok) { alert("Error al conectar con la base de datos."); return; }
-            const meta = await res.json();
-            
-            document.getElementById('modal-archivo-origen').value = meta.archivo_descarga || '';
-            document.getElementById('modal-codigo-doc').value = meta.codigo_doc || "N/A";
-            document.getElementById('modal-nombre').value = meta.nombre || "";
-            document.getElementById('modal-version').value = meta.version || "V-1.0";
-            document.getElementById('modal-autor').value = meta.autor_subida || "Estefanía (Gestor Documental)";
-            document.getElementById('modal-tamano').value = meta.tamano || "Desconocido";
-            document.getElementById('modal-compania').value = meta.compania_destino || "";
-            document.getElementById('modal-departamento').value = meta.departamento || "";
-            document.getElementById('modal-clasificacion').value = meta.clasificacion || "Uso Interno";
-            document.getElementById('modal-autorizado').value = 'Aprobada';
-            
-            if(!bsModalInstance) {
-                bsModalInstance = new bootstrap.Modal(document.getElementById('metadataBootstrapModal'));
-            }
-            bsModalInstance.show();
         }
 
         function cerrarModal() {
-            if(bsModalInstance) bsModalInstance.hide();
+            if (bsModalInstance) {
+                bsModalInstance.hide();
+            }
         }
     </script>
 </body>
