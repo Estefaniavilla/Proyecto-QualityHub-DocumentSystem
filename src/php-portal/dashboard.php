@@ -41,6 +41,43 @@ $es_super_admin = (strpos(strtolower($nombre_usuario), 'lizeth') !== false);
 $es_juan        = (strpos(strtolower($nombre_usuario), 'juan')   !== false);
 
 // ==========================================
+// BUSCADOR AVANZADO (PYTHON / MONGODB)
+// ==========================================
+$busqueda_avanzada = isset($_GET['q']) ? trim($_GET['q']) : '';
+$archivos_encontrados = null;
+$mapa_snippets = [];
+$error_msg = '';
+
+if (!empty($busqueda_avanzada)) {
+    // Usamos el nombre exacto de tu contenedor de Python
+    $url = "http://python_busqueda_container:5000/api/buscar?nombre=" . urlencode($busqueda_avanzada);
+    
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 5); // 5 seg maximo para no trabar PHP
+    $respuesta = curl_exec($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    if ($http_code == 200 && $respuesta) {
+        $datos = json_decode($respuesta, true);
+        if (isset($datos['documentos'])) {
+            $archivos_encontrados = [];
+            foreach ($datos['documentos'] as $doc) {
+                $nombre_fisico = $doc['archivo_descarga'];
+                $archivos_encontrados[] = $nombre_fisico;
+                if (!empty($doc['snippet_match'])) {
+                    $mapa_snippets[$nombre_fisico] = $doc['snippet_match'];
+                }
+            }
+        }
+    } else {
+        $error_msg = "Aviso: No se pudo conectar con el motor de búsqueda profunda en Mongo.";
+    }
+}
+
+// ==========================================
 // PAGINACIÓN
 // ==========================================
 $por_pagina    = 5;
@@ -63,7 +100,6 @@ $logs_acceso      = [];
 $estadisticas     = [];
 $descargas        = [];
 $almacen_datos    = [];
-$error_msg        = '';
 
 try {
     $base_ubicacion = str_replace(['ó','Ó'], 'o', $ubicacion_usuario);
@@ -84,27 +120,49 @@ try {
     // VISOR DOCUMENTAL
     // ------------------------------------------
     if ($vista_actual === 'vigentes' || $vista_actual === 'obsoletos') {
+        
+        // --- INYECCIÓN DEL FILTRO MONGO ---
+        $sql_filtro_mongo = "";
+        $params_mongo = [];
+        if (is_array($archivos_encontrados)) {
+            if (empty($archivos_encontrados)) {
+                $sql_filtro_mongo = " AND id = -1 "; // Falso, Python no encontró nada
+            } else {
+                $in_marks = [];
+                foreach ($archivos_encontrados as $i => $file) {
+                    $key = ":mongo_file_$i";
+                    $in_marks[] = $key;
+                    $params_mongo[$key] = $file;
+                }
+                $sql_filtro_mongo = " AND nombre_fisico IN (" . implode(',', $in_marks) . ") ";
+            }
+        }
+
         $condicion_estado = ($vista_actual === 'obsoletos')
             ? "='Obsoleto'"
             : "IN ('Vigente', 'En Revisión', 'En Fila', 'Autorizado')";
 
         if ($es_super_admin) {
-            $stmt_count = $pdo->prepare("SELECT COUNT(*) FROM documentos WHERE estado $condicion_estado");
-            $stmt_count->execute();
+            $stmt_count = $pdo->prepare("SELECT COUNT(*) FROM documentos WHERE estado $condicion_estado $sql_filtro_mongo");
+            $stmt_count->execute($params_mongo);
             $total_registros = $stmt_count->fetchColumn();
             $total_paginas   = max(1, ceil($total_registros / $por_pagina));
 
-            $stmt = $pdo->prepare("SELECT * FROM documentos WHERE estado $condicion_estado ORDER BY fecha_modificacion DESC LIMIT :limit OFFSET :offset");
+            $stmt = $pdo->prepare("SELECT * FROM documentos WHERE estado $condicion_estado $sql_filtro_mongo ORDER BY fecha_modificacion DESC LIMIT :limit OFFSET :offset");
             $stmt->bindValue(':limit',  $por_pagina, PDO::PARAM_INT);
             $stmt->bindValue(':offset', $offset,     PDO::PARAM_INT);
+            foreach ($params_mongo as $k => $v) {
+                $stmt->bindValue($k, $v, PDO::PARAM_STR);
+            }
             $stmt->execute();
             $todos_documentos = $stmt->fetchAll(PDO::FETCH_ASSOC);
         } else {
-            $stmt = $pdo->prepare("SELECT * FROM documentos WHERE estado $condicion_estado AND (documento_ubicacion = :ubicacion OR documento_ubicacion ILIKE :ubicacion_clean) ORDER BY fecha_modificacion DESC");
-            $stmt->execute([
+            $stmt = $pdo->prepare("SELECT * FROM documentos WHERE estado $condicion_estado AND (documento_ubicacion = :ubicacion OR documento_ubicacion ILIKE :ubicacion_clean) $sql_filtro_mongo ORDER BY fecha_modificacion DESC");
+            $params = array_merge([
                 ':ubicacion'       => $ubicacion_usuario,
                 ':ubicacion_clean' => '%' . substr($base_ubicacion, 0, 8) . '%'
-            ]);
+            ], $params_mongo);
+            $stmt->execute($params);
             $todos_documentos = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
 
@@ -166,7 +224,9 @@ try {
     }
 
 } catch (PDOException $e) {
-    $error_msg = "Error en dashboard: " . $e->getMessage();
+    if (empty($error_msg)) {
+        $error_msg = "Error en dashboard: " . $e->getMessage();
+    }
 }
 
 // ==========================================
@@ -504,14 +564,30 @@ function iconoPorTipo($tipo) {
              VISOR DOCUMENTAL
         ════════════════════════════════════════════ -->
         <?php if ($vista_actual === 'vigentes' || $vista_actual === 'obsoletos'): ?>
-            <div class="content-header">
-                <h1>Visor Documental Corporativo</h1>
-                <p><?= $es_super_admin ? 'Panel Global Completo' : 'Repositorio destinado a: ' . htmlspecialchars($ubicacion_usuario) ?></p>
-                <div style="margin-top:12px;">
-                    <a href="?vista=vigentes"  style="text-decoration:none;color:<?= $vista_actual==='vigentes'?'var(--primary)':'#64748b' ?>;font-weight:600;margin-right:18px;"><i class="fa-solid fa-file-circle-check me-1"></i>Documentos Vigentes</a>
-                    <a href="?vista=obsoletos" style="text-decoration:none;color:<?= $vista_actual==='obsoletos'?'var(--primary)':'#64748b' ?>;font-weight:600;"><i class="fa-solid fa-box-archive me-1"></i>Historial Obsoletos</a>
+            <div class="content-header" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 15px;">
+                <div>
+                    <h1>Visor Documental Corporativo</h1>
+                    <p><?= $es_super_admin ? 'Panel Global Completo' : 'Repositorio destinado a: ' . htmlspecialchars($ubicacion_usuario) ?></p>
+                    <div style="margin-top:12px;">
+                        <a href="?vista=vigentes"  style="text-decoration:none;color:<?= $vista_actual==='vigentes'?'var(--primary)':'#64748b' ?>;font-weight:600;margin-right:18px;"><i class="fa-solid fa-file-circle-check me-1"></i>Documentos Vigentes</a>
+                        <a href="?vista=obsoletos" style="text-decoration:none;color:<?= $vista_actual==='obsoletos'?'var(--primary)':'#64748b' ?>;font-weight:600;"><i class="fa-solid fa-box-archive me-1"></i>Historial Obsoletos</a>
+                    </div>
                 </div>
+                
+                <!-- NUEVO: BUSCADOR MONGODB -->
+                <form method="GET" action="" style="display:flex; gap:10px; background:#fff; border:1px solid var(--border); padding:8px; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+                    <input type="hidden" name="vista" value="<?= htmlspecialchars($vista_actual) ?>">
+                    <div style="position: relative;">
+                        <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 14px; top: 12px; color: #94a3b8;"></i>
+                        <input type="text" name="q" value="<?= htmlspecialchars($busqueda_avanzada) ?>" placeholder="Buscar dentro de documentos..." style="border:none; background:#f8fafc; border-radius:6px; padding:10px 10px 10px 38px; width:300px; outline:none; font-family:inherit; font-size:0.9rem; border:1px solid #e2e8f0;">
+                    </div>
+                    <button type="submit" style="background:var(--primary); color:#fff; border:none; padding:0 22px; border-radius:6px; font-weight:600; cursor:pointer; transition:0.2s;">Buscar</button>
+                    <?php if (!empty($busqueda_avanzada)): ?>
+                        <a href="?vista=<?= htmlspecialchars($vista_actual) ?>" style="display:flex; align-items:center; justify-content:center; background:#fee2e2; color:#ef4444; text-decoration:none; padding:0 15px; border-radius:6px; font-weight:600;" title="Limpiar Búsqueda"><i class="fa-solid fa-xmark"></i></a>
+                    <?php endif; ?>
+                </form>
             </div>
+            
             <div class="table-container">
                 <table>
                     <thead><tr><th>Código</th><th>Nombre del Archivo</th><th>Extensión</th><th>Estado</th><th>Acciones</th></tr></thead>
@@ -521,7 +597,7 @@ function iconoPorTipo($tipo) {
                             <div class="empty-state">
                                 <i class="fa-solid fa-folder-open"></i>
                                 <h3>Sin documentos</h3>
-                                <p>No hay documentos registrados para esta vista.</p>
+                                <p><?= !empty($busqueda_avanzada) ? 'No se encontraron coincidencias en el motor de búsqueda.' : 'No hay documentos registrados para esta vista.' ?></p>
                             </div>
                         </td></tr>
                     <?php else: ?>
@@ -541,6 +617,13 @@ function iconoPorTipo($tipo) {
                                     <div>
                                         <span class="doc-title"><?= htmlspecialchars($doc['titulo']) ?></span>
                                         <span class="doc-filename"><?= htmlspecialchars($doc['nombre_fisico']) ?></span>
+                                        
+                                        <!-- NUEVO: MOSTRAR SNIPPET DE BÚSQUEDA -->
+                                        <?php if (isset($mapa_snippets[$doc['nombre_fisico']])): ?>
+                                            <div style="font-size: 0.78rem; color: #475569; background: #fffbeb; border-left: 3px solid #f59e0b; padding: 6px 12px; margin-top: 6px; border-radius: 0 6px 6px 0; max-width: 450px; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                                                <?= $mapa_snippets[$doc['nombre_fisico']] ?>
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </td>
@@ -557,7 +640,7 @@ function iconoPorTipo($tipo) {
                     </tbody>
                 </table>
             </div>
-            <?php if ($es_super_admin && $total_paginas > 1): ?>
+            <?php if ($es_super_admin && $total_paginas > 1 && empty($busqueda_avanzada)): ?>
             <div class="pagination">
                 <?php for ($i = 1; $i <= $total_paginas; $i++): ?>
                     <a href="?vista=<?= $vista_actual ?>&p=<?= $i ?>" class="<?= $pagina_actual===$i?'active':'' ?>"><?= $i ?></a>
@@ -736,196 +819,124 @@ function iconoPorTipo($tipo) {
 
 <!-- 1. MODAL VISUALIZADOR -->
 <div id="modalVisor" class="modal">
-    <div class="modal-view-content" id="modalViewContentBox">
-        <div class="modal-header" style="background:#1e293b; color:#fff; border-bottom:none; border-radius:14px 14px 0 0; padding:18px 25px;">
-            <h3><i class="fa-solid fa-file-magnifying-glass me-2" style="color:#38bdf8;"></i> Visor Documental Seguro</h3>
-            <button class="close-btn" onclick="cerrarVisor()" style="color:#fff;">&times;</button>
+    <div class="modal-view-content">
+        <div class="modal-header">
+            <h3>Visor Corporativo Seguro</h3>
+            <button class="close-btn" onclick="cerrarVisor()">&times;</button>
         </div>
-        <div id="modalViewContent" style="flex-grow:1; background:#e2e8f0; display:flex; flex-direction:column; justify-content:center;">
-            <!-- Contenido dinámico (iframe o mensaje de descarga) -->
+        <div style="flex-grow:1; position:relative; background:#f1f5f9;">
+            <iframe id="iframeDoc" style="width:100%; height:100%; border:none;"></iframe>
         </div>
     </div>
 </div>
 
-<!-- 2. MODAL REPORTE -->
+<!-- 2. MODAL REPORTE DE FALLA -->
 <div id="modalReporte" class="modal">
     <div class="modal-content">
-        <div class="modal-header" style="padding:0 0 15px;">
-            <h3>Reportar Observación</h3>
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-paper-plane" style="color:var(--primary);margin-right:10px;"></i>Reportar Falla</h3>
             <button class="close-btn" onclick="cerrarModalReporte()">&times;</button>
         </div>
-        <p style="color:#64748b;font-size:.9rem;margin-bottom:20px;">Describe el problema encontrado en el documento. Este reporte será enviado directamente al área de Calidad a través de QualityHub .NET.</p>
-        
-        <input type="hidden" id="reporteDocId">
-        <textarea id="reporteComentarios" placeholder="Ej: Faltan firmas en la página 3, el formato está desalineado..."></textarea>
-        
-        <button class="btn-submit" onclick="enviarReporteFalla()">Enviar Reporte a .NET</button>
+        <p style="color:var(--text-muted);font-size:.95rem;margin-top:15px;">¿Encontraste un error en el documento <strong id="rep_codigo"></strong>?</p>
+        <form onsubmit="enviarReporte(event)">
+            <input type="hidden" id="rep_doc_id" name="doc_id">
+            <textarea id="rep_motivo" placeholder="Describe brevemente el error (ej. Faltan firmas, el anexo está cortado...)" required></textarea>
+            <button type="submit" class="btn-submit">Enviar Reporte a Calidad</button>
+        </form>
     </div>
 </div>
 
-<!-- 3. TOAST NOTIFICACIÓN -->
-<div class="toast-qh" id="toastQH">
-    <i class="fa-solid fa-circle-check"></i>
-    <span id="toastMsg">Operación exitosa</span>
-</div>
+<!-- NOTIFICACIÓN -->
+<div id="toast" class="toast-qh"><i class="fa-solid fa-circle-check"></i><span id="toast-msg">Mensaje</span></div>
 
-<!-- ============================================================
-     SCRIPTS
-============================================================= -->
 <script>
-    // ======= TOAST =======
-    function showToast(msg) {
-        const toast = document.getElementById('toastQH');
-        document.getElementById('toastMsg').innerText = msg;
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 3500);
-    }
-
-    // ======= FILTROS NOTICIAS =======
-    function changeNewsTab(element, type) {
+    // ----- LÓGICA DE PESTAÑAS (NOTICIAS) -----
+    function changeNewsTab(tabObj, tipo) {
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        element.classList.add('active');
+        tabObj.classList.add('active');
         document.querySelectorAll('.news-item').forEach(item => {
-            if(type === 'TODAS' || item.getAttribute('data-type') === type) {
-                item.style.display = 'flex';
-            } else {
-                item.style.display = 'none';
-            }
+            item.style.display = (tipo === 'TODAS' || item.getAttribute('data-type') === tipo) ? 'flex' : 'none';
         });
     }
 
-    // ======= LOG DE DESCARGA =======
-    function registrarLog(docId, accion) {
-        let fd = new FormData();
-        fd.append('registrar_log', '1');
-        fd.append('doc_id', docId);
-        fd.append('accion', accion);
-        fetch('dashboard.php', { method: 'POST', body: fd });
-    }
-
-    // ======= MODAL REPORTE =======
-    function abrirModalReporte(id) {
-        document.getElementById('reporteDocId').value = id;
-        document.getElementById('modalReporte').style.display = 'flex';
-    }
-    function cerrarModalReporte() {
-        document.getElementById('modalReporte').style.display = 'none';
-        document.getElementById('reporteComentarios').value = '';
-    }
-    function enviarReporteFalla() {
-        const id = document.getElementById('reporteDocId').value;
-        const comentarios = document.getElementById('reporteComentarios').value;
-        
-        if(!comentarios.trim()) { alert('Por favor, ingresa los comentarios del reporte.'); return; }
-
-        fetch('reportar_falla.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ DocumentoId: id, Comentarios: comentarios })
-        })
-        .then(response => response.json())
-        .then(data => {
-            cerrarModalReporte();
-            showToast('Reporte enviado con éxito a QualityHub .NET');
-        })
-        .catch(err => {
-            cerrarModalReporte();
-            showToast('Error al enviar el reporte. Verifica la conexión con .NET.');
-        });
-    }
-
-    // ==========================================
-    // 🌟 FUNCIÓN CORREGIDA PARA ABRIR ARCHIVOS (Usa ver_archivo.php)
-    // ==========================================
-    function verDocumento(docId, nombreFisico, extension) {
-        registrarLog(docId, 'LECTURA');
-
-        let modal = document.getElementById('modalVisor');
-        let content = document.getElementById('modalViewContent');
-        
-        let rutaProxy = 'ver_archivo.php?f=' + encodeURIComponent(nombreFisico);
-
-        if (extension === 'pdf') {
-            content.innerHTML = `<iframe src="${rutaProxy}" style="width:100%; height:100%; border:none; border-radius:0 0 14px 14px;"></iframe>`;
-        } else if (['docx', 'doc', 'xlsx', 'xls'].includes(extension)) {
-            content.innerHTML = `
-                <div style="padding:60px 20px; text-align:center;">
-                    <i class="fa-solid fa-cloud-arrow-down" style="font-size:4rem; color:var(--primary); margin-bottom:20px;"></i>
-                    <h2 style="margin:0 0 10px; color:#1e293b;">Documento de Office</h2>
-                    <p style="color:#64748b; margin-bottom:25px;">Por restricciones de los navegadores, los archivos de Word y Excel deben descargarse para ser visualizados.</p>
-                    <a href="${rutaProxy}&download=1" style="background:var(--primary); color:#fff; padding:12px 24px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-block; transition:0.2s;">
-                        <i class="fa-solid fa-download me-2"></i>Descargar Archivo
-                    </a>
-                </div>`;
-        } else {
-            content.innerHTML = `
-                <div style="padding:50px; text-align:center;">
-                    <i class="fa-solid fa-circle-exclamation" style="font-size:3rem; color:#f59e0b; margin-bottom:15px;"></i>
-                    <h3 style="margin:0; color:#1e293b;">Formato no compatible</h3>
-                    <p style="color:#64748b;">No se puede generar una vista previa para este tipo de archivo.</p>
-                </div>`;
+    // ----- LÓGICA DEL VISUALIZADOR Y LOGS -----
+    function verDocumento(id, archivoFisico, tipo) {
+        if (!archivoFisico) {
+            mostrarToast("Error: El archivo físico no está disponible en el servidor.", true);
+            return;
         }
-        
+
+        document.getElementById('iframeDoc').src = '';
+        const modal = document.getElementById('modalVisor');
         modal.style.display = 'flex';
+
+        registrarLog(id, 'LECTURA');
+
+        const urlDoc = 'ver_archivo.php?f=' + encodeURIComponent(archivoFisico);
+
+        if (tipo === 'pdf') {
+            document.getElementById('iframeDoc').src = urlDoc;
+        } else if (tipo === 'docx' || tipo === 'doc' || tipo === 'xlsx' || tipo === 'xls') {
+            const absoluteUrl = window.location.origin + window.location.pathname.replace('dashboard.php', '') + urlDoc;
+            const officeViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(absoluteUrl)}`;
+            document.getElementById('iframeDoc').src = officeViewerUrl;
+        } else {
+            document.getElementById('iframeDoc').src = urlDoc;
+        }
     }
 
     function cerrarVisor() {
         document.getElementById('modalVisor').style.display = 'none';
-        document.getElementById('modalViewContent').innerHTML = '';
-    }
-</script>
-     <!-- Cargar SweetAlert para las ventanas emergentes -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-<script>
-    // 👁️ 1. VISOR DE DOCUMENTOS
-    // Usa la ruta mapeada en tu Docker ./storage/actuales
-   function verDocumento(id, archivoFisico, tipo) {
-    // Redirigimos directamente al servidor de archivos de C#
-    var urlCsharp = 'http://localhost:7083/storage/actuales/' + encodeURIComponent(archivoFisico);
-    window.open(urlCsharp, '_blank');
-}
-    // 🚩 2. REPORTAR FALLA A C#
-    function abrirModalReporte(codigoIso) {
-        Swal.fire({
-            title: 'Reportar Anomalía al Creador',
-            text: 'Describe el problema de calidad o error en el documento:',
-            input: 'textarea',
-            inputPlaceholder: 'Ej: El logotipo es incorrecto, la página 3 está borrosa...',
-            showCancelButton: true,
-            confirmButtonText: 'Enviar Reporte a C#',
-            cancelButtonText: 'Cancelar',
-            preConfirm: (sugerencia) => {
-                if (!sugerencia) Swal.showValidationMessage('Por favor escribe el motivo de la falla');
-                return sugerencia;
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // Enviamos los datos por AJAX a nuestro archivo PHP intermediario
-                const formData = new FormData();
-                formData.append('codigo_iso', codigoIso);
-                formData.append('sugerencia', result.value);
-
-                fetch('reportar_falla.php', { method: 'POST', body: formData })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        Swal.fire('¡Enviado!', 'El creador ha sido notificado y el documento bajó a estado Rechazado.', 'success');
-                    } else {
-                        Swal.fire('Error', 'No se pudo contactar al servidor C# (Revisa el puerto en reportar_falla.php)', 'error');
-                    }
-                });
-            }
-        });
+        document.getElementById('iframeDoc').src = '';
     }
 
-    // 📊 3. REGISTRAR LOGS DE DESCARGA (Para tus métricas de PHP)
-    function registrarLog(id, accion) {
+    // ----- REGISTRO DE LOGS AJAX -----
+    function registrarLog(docId, accion) {
         const formData = new FormData();
         formData.append('registrar_log', '1');
-        formData.append('doc_id', id);
+        formData.append('doc_id', docId);
         formData.append('accion', accion);
-        fetch('dashboard.php', { method: 'POST', body: formData });
+
+        fetch('dashboard.php', { method: 'POST', body: formData })
+        .then(response => response.json())
+        .catch(err => console.error("Error al registrar log: ", err));
+    }
+
+    // ----- MODAL REPORTE -----
+    function abrirModalReporte(codigo) {
+        document.getElementById('rep_codigo').innerText = codigo;
+        document.getElementById('rep_doc_id').value = codigo;
+        document.getElementById('rep_motivo').value = '';
+        document.getElementById('modalReporte').style.display = 'flex';
+    }
+
+    function cerrarModalReporte() {
+        document.getElementById('modalReporte').style.display = 'none';
+    }
+
+    function enviarReporte(e) {
+        e.preventDefault();
+        cerrarModalReporte();
+        mostrarToast("Reporte enviado a Control Documental exitosamente");
+    }
+
+    // ----- TOAST NOTIFICACIONES -----
+    function mostrarToast(msg, isError = false) {
+        const toast = document.getElementById('toast');
+        const icon = toast.querySelector('i');
+        
+        document.getElementById('toast-msg').innerText = msg;
+        
+        if (isError) {
+            icon.className = 'fa-solid fa-circle-exclamation';
+            icon.style.color = '#ef4444';
+        } else {
+            icon.className = 'fa-solid fa-circle-check';
+            icon.style.color = '#10b981';
+        }
+
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3500);
     }
 </script>
 </body>

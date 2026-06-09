@@ -13,7 +13,7 @@ def extraer_texto_pdf(ruta):
         import pdfplumber
         texto = ""
         with pdfplumber.open(ruta) as pdf:
-            for pagina in pdf.pages:  # Removido el límite de 10 páginas
+            for pagina in pdf.pages:
                 t = pagina.extract_text()
                 if t:
                     texto += t + " "
@@ -37,8 +37,8 @@ def extraer_texto_excel(ruta):
         from openpyxl import load_workbook
         wb = load_workbook(ruta, read_only=True, data_only=True)
         texto = ""
-        for ws in wb.worksheets:  # Removido el límite de 5 hojas
-            for row in ws.iter_rows(values_only=True):  # Removido el límite de 200 filas
+        for ws in wb.worksheets:
+            for row in ws.iter_rows(values_only=True):
                 for cell in row:
                     if cell is not None:
                         texto += str(cell) + " "
@@ -63,7 +63,6 @@ def extraer_todos_los_metadatos(ruta, extension):
     metadatos = {}
     ext = extension.upper()
     try:
-        # Metadatos a nivel de sistema de archivos (OS)
         stat = os.stat(ruta)
         metadatos["peso_real_bytes"] = str(stat.st_size)
         metadatos["ultima_modificacion_sistema"] = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(stat.st_mtime))
@@ -110,7 +109,6 @@ def extraer_todos_los_metadatos(ruta, extension):
     return metadatos
 
 def clasificar_tipo_archivo(extension):
-    """Convierte la extensión cruda a un nombre de tipo legible"""
     ext = extension.upper()
     if ext == 'PDF':
         return 'PDF'
@@ -122,12 +120,10 @@ def clasificar_tipo_archivo(extension):
         return 'PowerPoint'
     return ext
 
-# Ruta interna dentro del contenedor mapeada al volumen compartido
 CARPETA_ALMACENAMIENTO = '/app/storage/actuales'
 
 try:
     from pymongo import MongoClient
-    # Conectamos a la base de datos 'proyectofinal'
     cliente = MongoClient("mongodb://mongodb_container:27017/", serverSelectionTimeoutMS=5000)
     db = cliente['proyectofinal']
     coleccion_metadatos = db['metadatos']
@@ -140,21 +136,17 @@ except Exception as e:
     coleccion_usuarios = None
 
 def obtener_version_sqlserver(archivo_descarga):
-    """Intenta obtener la versión real del documento desde la base de datos de SQL Server"""
     try:
         import pymssql
-        # Intentamos conectar al contenedor de SQL Server en la misma red de Docker.
-        # Usualmente se llama 'sqlserver_container', 'db', 'sqlserver', o 'localhost' si corre local.
         host_options = ['sqlserver_container', 'db', 'sqlserver', 'localhost', '127.0.0.1']
         conn = None
         for host in host_options:
             try:
-                # Usamos credenciales comunes de desarrollo para SQL Server en Docker
                 conn = pymssql.connect(
                     server=host,
                     user='sa',
-                    password='Password123!',  # Contraseña común en contenedores de desarrollo de MS SQL
-                    database='proyectofinal', # Intentamos con bases de datos comunes
+                    password='Password123!', 
+                    database='proyectofinal', 
                     timeout=1
                 )
                 if conn:
@@ -164,7 +156,6 @@ def obtener_version_sqlserver(archivo_descarga):
         
         if conn:
             cursor = conn.cursor()
-            # Consultar la última versión registrada para este archivo
             query = """
                 SELECT TOP 1 dv.CodigoVersion 
                 FROM DocumentoVersion dv
@@ -184,7 +175,6 @@ def obtener_version_sqlserver(archivo_descarga):
     return None
 
 def normalizar_fecha(fecha_str):
-    """Normaliza formatos de fecha (dia/mes/año o año/mes/dia) a YYYY-MM-DD para comparación limpia"""
     if not fecha_str:
         return ""
     fecha_str = fecha_str.strip()
@@ -205,18 +195,14 @@ def normalizar_fecha(fecha_str):
     return fecha_str
 
 def generar_snippet(doc_mongo, query):
-    """Genera un fragmento de texto resaltando dónde coincide la búsqueda, estilo Google Search"""
     if not query:
         return ""
-    
     query_lower = query.lower()
     
-    # 1. Buscar coincidencia en el texto completo extraído del documento
     texto = doc_mongo.get("texto_extraido", "")
     if texto:
         idx = texto.lower().find(query_lower)
         if idx != -1:
-            # Extraemos una ventana de texto alrededor de la coincidencia
             inicio = max(0, idx - 60)
             fin = min(len(texto), idx + len(query) + 60)
             snippet = texto[inicio:fin]
@@ -224,7 +210,6 @@ def generar_snippet(doc_mongo, query):
             prefijo = "... " if inicio > 0 else ""
             sufijo = " ..." if fin < len(texto) else ""
             
-            # Resaltar la consulta en el fragmento usando etiquetas mark de HTML con estilo premium
             snippet_resaltado = re.sub(
                 f"({re.escape(query)})", 
                 r"<mark style='background-color: #fef08a; padding: 2px 4px; border-radius: 4px; color: #1e293b; font-weight: 600;'>\1</mark>", 
@@ -233,7 +218,6 @@ def generar_snippet(doc_mongo, query):
             )
             return f"<strong>En el contenido del documento:</strong> {prefijo}{snippet_resaltado}{sufijo}"
     
-    # 2. Buscar coincidencia en cualquiera de los otros metadatos dinámicos
     for key, val in doc_mongo.items():
         if key not in ("texto_extraido", "_id"):
             val_str = str(val)
@@ -246,11 +230,9 @@ def generar_snippet(doc_mongo, query):
                     flags=re.IGNORECASE
                 )
                 return f"<strong>En metadato [{clave_bonita}]:</strong> {val_resaltado}"
-                
     return ""
 
 def obtener_tamano_formateado(ruta):
-    """Calcula dinámicamente el peso real del archivo físico"""
     try:
         bytes_size = os.path.getsize(ruta)
         if bytes_size == 0:
@@ -264,7 +246,6 @@ def obtener_tamano_formateado(ruta):
         return "Desconocido"
 
 def mapear_formato(formato):
-    """Asocia un formato del buscador a las posibles extensiones de archivo"""
     formato_upper = formato.upper()
     if formato_upper == 'WORD':
         return ['WORD', 'DOC', 'DOCX']
@@ -288,46 +269,28 @@ def login():
     compania_ingresada = data.get('compania', '').strip()
     departamento_ingresado = data.get('departamento', '').strip()
 
-    # Si no se pudo establecer conexión con MongoDB, usamos credenciales de respaldo validadas estrictamente
     if coleccion_usuarios is None:
         if usuario_ingresado == 'fer_admin':
             if contrasena_ingresada == '12345' and compania_ingresada == 'Compania_A' and departamento_ingresado == 'Calidad':
-                return jsonify({
-                    "status": "success",
-                    "usuario": "fer_admin",
-                    "compania": "Compania_A",
-                    "departamento": "Calidad"
-                })
+                return jsonify({"status": "success", "usuario": "fer_admin", "compania": "Compania_A", "departamento": "Calidad"})
             else:
                 return jsonify({"error": "Contraseña, compañía o departamento incorrectos para fer_admin"}), 401
         elif usuario_ingresado == 'auditor_global':
             if contrasena_ingresada == '54321' and compania_ingresada == 'Compania_B' and departamento_ingresado == 'Auditoría':
-                return jsonify({
-                    "status": "success",
-                    "usuario": "auditor_global",
-                    "compania": "Compania_B",
-                    "departamento": "Auditoría"
-                })
+                return jsonify({"status": "success", "usuario": "auditor_global", "compania": "Compania_B", "departamento": "Auditoría"})
             else:
                 return jsonify({"error": "Contraseña, compañía o departamento incorrectos para auditor_global"}), 401
         return jsonify({"error": "Usuario no registrado o datos incorrectos"}), 401
 
     try:
-        # Buscamos en la base de datos el usuario que coincida exactamente
         usuario_doc = coleccion_usuarios.find_one({"usuario": usuario_ingresado})
         if usuario_doc:
             db_pass = str(usuario_doc.get("contrasena", "")).strip()
             db_comp = str(usuario_doc.get("compania", "")).strip()
             db_dept = str(usuario_doc.get("departamento", "")).strip()
             
-            # Validación estricta cruzada
             if db_pass == contrasena_ingresada and db_comp == compania_ingresada and db_dept == departamento_ingresado:
-                return jsonify({
-                    "status": "success",
-                    "usuario": usuario_doc["usuario"],
-                    "compania": db_comp,
-                    "departamento": db_dept
-                })
+                return jsonify({"status": "success", "usuario": usuario_doc["usuario"], "compania": db_comp, "departamento": db_dept})
             else:
                 return jsonify({"error": "Contraseña, compañía o departamento incorrectos para este usuario"}), 401
         else:
@@ -343,7 +306,6 @@ def buscar_documentos():
     filtro_compania = request.args.get('compania', '').strip()
     filtro_departamento = request.args.get('departamento', '').strip()
     
-    # Parámetros de paginación
     try:
         page = int(request.args.get('page', 1))
         per_page = int(request.args.get('per_page', 5))
@@ -365,7 +327,6 @@ def buscar_documentos():
         ext = archivo.split('.')[-1].upper() if '.' in archivo else 'Desconocido'
         tipo_legible = clasificar_tipo_archivo(ext)
         
-        # Filtro de tipo rápido previo a la base de datos
         if filtro_tipo != 'Todos':
             formatos_permitidos = mapear_formato(filtro_tipo)
             if ext not in formatos_permitidos:
@@ -373,7 +334,6 @@ def buscar_documentos():
 
         ruta_completa = os.path.join(CARPETA_ALMACENAMIENTO, archivo)
 
-        # Consultar si ya tiene metadatos registrados en MongoDB
         doc_mongo = None
         if coleccion_metadatos is not None:
             try:
@@ -381,13 +341,9 @@ def buscar_documentos():
             except:
                 pass
 
-        # Obtener versión real de SQL Server para mantenerla actualizada
         version_real = obtener_version_sqlserver(archivo) or (doc_mongo.get("version") if doc_mongo else "V-1.0")
-
-        # Extraer metadatos dinámicos
         metadatos_dinamicos = extraer_todos_los_metadatos(ruta_completa, ext)
 
-        # Si el archivo fue subido físicamente pero no está en MongoDB, lo registramos con los metadatos del visor actual
         if not doc_mongo and coleccion_metadatos is not None:
             try:
                 fecha_mod = os.path.getmtime(ruta_completa)
@@ -397,15 +353,10 @@ def buscar_documentos():
 
             tamano_real = obtener_tamano_formateado(ruta_completa)
             nombre_limpio = archivo.rsplit('.', 1)[0].replace('_', ' ') if '.' in archivo else archivo.replace('_', ' ')
-            
-            # Generamos un código documental único basado en un hash estable del nombre
             codigo_hash = str(abs(hash(archivo)))[:4]
             codigo_documental = f"QH-{tipo_legible.upper()}-{codigo_hash}"
-
-            # Extraer texto del documento para búsqueda por palabras clave
             texto_extraido = extraer_texto_archivo(ruta_completa, ext)
 
-            # Insertamos solo los campos esenciales del sistema y unimos absolutamente todos los metadatos extraídos
             doc_mongo = {
                 "nombre": nombre_limpio,
                 "codigo_doc": codigo_documental,
@@ -419,7 +370,6 @@ def buscar_documentos():
                 "tamano": tamano_real,
                 "texto_extraido": texto_extraido
             }
-            # Guardamos todos los metadatos extraídos del archivo sin filtros
             doc_mongo.update(metadatos_dinamicos)
 
             try:
@@ -427,13 +377,11 @@ def buscar_documentos():
             except:
                 pass
         elif doc_mongo and coleccion_metadatos is not None:
-            # Si ya existía pero queremos mantener la versión y metadatos actualizados desde SQL Server / archivo
             actualizado = False
             if doc_mongo.get("version") != version_real:
                 doc_mongo["version"] = version_real
                 actualizado = True
             
-            # Actualizar campos dinámicos que no estén
             for k, v in metadatos_dinamicos.items():
                 if doc_mongo.get(k) != v:
                     doc_mongo[k] = v
@@ -445,39 +393,30 @@ def buscar_documentos():
                 except:
                     pass
 
-        # Si tenemos el documento (sea previamente guardado o recién creado en MongoDB)
         if doc_mongo:
-            # 1. Filtro estricto de Compañía: El usuario solo ve los documentos asignados a su compañía
             if filtro_compania and doc_mongo.get("compania_destino", "").strip().upper() != filtro_compania.strip().upper():
                 continue
 
-            # 2. Filtro de Tipo Técnico
             if filtro_tipo != 'Todos':
                 formatos_permitidos = mapear_formato(filtro_tipo)
                 ext_doc = doc_mongo.get("tipo", "").upper()
                 if ext_doc not in formatos_permitidos and ext not in formatos_permitidos:
                     continue
 
-            # 3. Filtro de Fecha de Registro
             if filtro_fecha:
                 fecha_doc_norm = normalizar_fecha(doc_mongo.get("fecha", ""))
                 fecha_filtro_norm = normalizar_fecha(filtro_fecha)
                 if fecha_doc_norm != fecha_filtro_norm:
                     continue
 
-            # 4. Filtro por Nombre, Código, Texto Extraído o cualquier otro Metadato dinámico
             if filtro_nombre:
                 nombre_doc = doc_mongo.get("nombre", "").lower()
                 codigo_doc = doc_mongo.get("codigo_doc", "").lower()
                 nombre_archivo = archivo.lower()
                 texto_doc = doc_mongo.get("texto_extraido", "").lower()
                 
-                match = (filtro_nombre in nombre_doc or 
-                         filtro_nombre in codigo_doc or 
-                         filtro_nombre in nombre_archivo or 
-                         filtro_nombre in texto_doc)
+                match = (filtro_nombre in nombre_doc or filtro_nombre in codigo_doc or filtro_nombre in nombre_archivo or filtro_nombre in texto_doc)
 
-                # Si no coincide en los base, buscar en TODOS los metadatos dinámicos
                 if not match:
                     for key, val in doc_mongo.items():
                         if key not in ("texto_extraido", "_id"):
@@ -489,46 +428,30 @@ def buscar_documentos():
                     continue
 
             tamano_str = doc_mongo.get("tamano") or obtener_tamano_formateado(ruta_completa)
-
-            # Generar snippet de coincidencia estilo Google (antes de descartar texto_extraido)
             snippet_match = generar_snippet(doc_mongo, filtro_nombre) if filtro_nombre else ""
 
-            # Construir el candidato conservando todos los metadatos dinámicos
             doc_candidato = dict(doc_mongo)
             doc_candidato.pop("_id", None)
             doc_candidato.pop("texto_extraido", None)
-
-            # Inyectar el snippet de coincidencia en el resultado
             doc_candidato["snippet_match"] = snippet_match
             
-            # Asegurar compatibilidad de campos básicos para el renderizado del listado
-            if "archivo_descarga" not in doc_candidato:
-                doc_candidato["archivo_descarga"] = archivo
-            if "nombre" not in doc_candidato:
-                doc_candidato["nombre"] = doc_mongo.get("nombre", archivo)
-            if "fecha" not in doc_candidato:
-                doc_candidato["fecha"] = doc_mongo.get("fecha", "2026-05-26")
-            if "estado" not in doc_candidato:
-                doc_candidato["estado"] = doc_mongo.get("estado", "Autorizado")
-            if "tipo" not in doc_candidato:
-                doc_candidato["tipo"] = tipo_legible
-            if "version" not in doc_candidato:
-                doc_candidato["version"] = version_real
+            if "archivo_descarga" not in doc_candidato: doc_candidato["archivo_descarga"] = archivo
+            if "nombre" not in doc_candidato: doc_candidato["nombre"] = doc_mongo.get("nombre", archivo)
+            if "fecha" not in doc_candidato: doc_candidato["fecha"] = doc_mongo.get("fecha", "2026-05-26")
+            if "estado" not in doc_candidato: doc_candidato["estado"] = doc_mongo.get("estado", "Autorizado")
+            if "tipo" not in doc_candidato: doc_candidato["tipo"] = tipo_legible
+            if "version" not in doc_candidato: doc_candidato["version"] = version_real
 
             documentos_candidatos.append(doc_candidato)
 
-    # Calcular los conteos de KPI sobre el conjunto TOTAL filtrado antes de paginar
     conteo_autorizados = sum(1 for doc in documentos_candidatos if doc["estado"] in ['Authorized', 'Autorizado'])
     conteo_revision = len(documentos_candidatos) - conteo_autorizados
 
-    # Calcular Paginación
     total_items = len(documentos_candidatos)
     total_pages = math.ceil(total_items / per_page) if total_items > 0 else 1
     
-    if page < 1:
-        page = 1
-    elif page > total_pages:
-        page = total_pages
+    if page < 1: page = 1
+    elif page > total_pages: page = total_pages
 
     start_idx = (page - 1) * per_page
     end_idx = start_idx + per_page
@@ -557,11 +480,9 @@ def obtener_metadatos(nombre_archivo):
             pass
     
     if doc:
-        # Retornamos el documento completo de MongoDB (que contiene todos los metadatos)
-        # Convertimos _id a string y removemos texto_extraido para no sobrecargar
         res_data = dict(doc)
         res_data.pop("_id", None)
-        res_data.pop("texto_extraido", None)
+        # YA NO BORRAMOS EL TEXTO AQUÍ PARA QUE PUEDAS VERLO EN TU BOTÓN DE DATA
         return jsonify(res_data)
     
     return jsonify({"error": "No se encontraron metadatos"}), 404
@@ -585,11 +506,9 @@ def editar_metadatos():
         except:
             pass
 
-    # Mantener metadatos dinámicos existentes
     valores_actualizados = doc_existente.copy()
     valores_actualizados.pop("_id", None)
     
-    # Actualizar con los nuevos valores del POST
     valores_actualizados.update({
         "nombre": data.get("nombre"),
         "compania_destino": data.get("compania_destino"),
@@ -615,7 +534,6 @@ def editar_metadatos():
 
 @app.route('/api/ver/<path:nombre_archivo>')
 def ver_archivo_inline(nombre_archivo):
-    """Envía el archivo con cabeceras de visualización inline para forzar su apertura en el navegador"""
     response = send_from_directory(CARPETA_ALMACENAMIENTO, nombre_archivo, as_attachment=False)
     if nombre_archivo.lower().endswith('.pdf'):
         response.headers['Content-Type'] = 'application/pdf'
@@ -628,7 +546,6 @@ def ver_archivo_inline(nombre_archivo):
 
 @app.route('/api/descargar/<path:nombre_archivo>')
 def descargar_archivo_attachment(nombre_archivo):
-    """Fuerza la descarga directa del archivo físico de la carpeta storage"""
     return send_from_directory(CARPETA_ALMACENAMIENTO, nombre_archivo, as_attachment=True)
 
 if __name__ == '__main__':

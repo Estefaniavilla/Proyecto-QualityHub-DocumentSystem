@@ -527,10 +527,10 @@
                     <table class="table table-custom-spec">
                         <thead>
                             <tr>
-                                <th style="width: 45%;">Nombre del Documento</th>
+                                <th style="width: 40%;">Nombre del Documento</th>
                                 <th style="width: 15%; text-align: center;">Alta Sistema</th>
                                 <th style="width: 15%; text-align: center;">Estatus</th>
-                                <th style="width: 25%; text-align: center;">Acciones Operativas</th>
+                                <th style="width: 30%; text-align: center;">Acciones Operativas</th>
                             </tr>
                         </thead>
                         <tbody id="document-rows">
@@ -570,6 +570,23 @@
         </div>
     </div>
 
+    <!-- NUEVO MODAL PARA JSON CRUDO -->
+    <div class="modal fade" id="jsonModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content modal-premium-content">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="fw-800" style="font-size:18px;" id="json-meta-title"><i class="fa-solid fa-code text-warning me-2"></i>Data Cruda</h5>
+                    <button type="button" class="btn-close" onclick="cerrarJsonModal()"></button>
+                </div>
+                <div class="modal-body" id="json-meta-content" style="max-height: 500px; overflow-y: auto;">
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-secondary px-4 w-100" style="border-radius:9px; font-size:14px; font-weight:600;" onclick="cerrarJsonModal()">Cerrar Ventana</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap 5 Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -577,6 +594,7 @@
     <script>
         let datosUsuario = null;
         let bsModalInstance = null;
+        let jsonModalInstance = null; // Instancia para el nuevo modal
         
         // Parámetros de paginación del frontend
         let paginaActual = 1;
@@ -662,17 +680,14 @@
                 totalPaginas = responseData.pages || 1;
                 paginaActual = responseData.page || 1;
                 
-                // Actualizar contadores dinámicos globales desde la respuesta
                 document.getElementById('kpi-totales').innerText = responseData.kpis.totales;
                 document.getElementById('kpi-autorizados').innerText = responseData.kpis.autorizados;
                 document.getElementById('kpi-revision').innerText = responseData.kpis.revision;
 
-                // Actualizar información de paginación
                 const startRange = totalDocs === 0 ? 0 : (paginaActual - 1) * porPagina + 1;
                 const endRange = Math.min(paginaActual * porPagina, totalDocs);
                 document.getElementById('pagination-info').innerText = `Mostrando del ${startRange} al ${endRange} de ${totalDocs} documentos`;
 
-                // Renderizar tabla
                 const rowsContainer = document.getElementById('document-rows');
                 rowsContainer.innerHTML = '';
 
@@ -682,14 +697,11 @@
                     documentos.forEach(doc => {
                         const tr = document.createElement('tr');
                         
-                        // Badge para la extensión
                         const extClass = doc.tipo === 'PDF' ? 'ext-pdf' : doc.tipo === 'Word' ? 'ext-word' : doc.tipo === 'Excel' ? 'ext-excel' : 'ext-power';
                         const extIcon = doc.tipo === 'PDF' ? 'fa-file-pdf' : doc.tipo === 'Word' ? 'fa-file-word' : doc.tipo === 'Excel' ? 'fa-file-excel' : 'fa-file-powerpoint';
                         
-                        // Badge para el estatus
                         const statusClass = doc.estado === 'Autorizado' ? 'pill-auth' : 'pill-rev';
                         
-                        // Formatear la fecha para mostrar en la tabla (si viene en YYYY-MM-DD podemos convertirla a DD/MM/YYYY si se prefiere visualmente)
                         let fechaVisual = doc.fecha;
                         if (fechaVisual && fechaVisual.includes('-')) {
                             const partes = fechaVisual.split('-');
@@ -698,7 +710,6 @@
                             }
                         }
 
-                        // Bloque del snippet de coincidencia (solo se muestra si hay una búsqueda activa)
                         const snippetHtml = doc.snippet_match
                             ? `<div class="search-snippet-block">${doc.snippet_match}</div>`
                             : '';
@@ -728,6 +739,9 @@
                                     <button onclick="mostrarMetadatos('${doc.archivo_descarga}')" class="btn-action-pill act-info" title="Detalles">
                                         <i class="fa-solid fa-info-circle"></i> Info
                                     </button>
+                                    <button onclick="mostrarTodosLosMetadatos('${doc.archivo_descarga}', '${doc.nombre}')" class="btn-action-pill" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b;" title="Data Cruda">
+                                        <i class="fa-solid fa-code"></i> Data
+                                    </button>
                                     <a href="/api/descargar/${encodeURIComponent(doc.archivo_descarga)}" class="btn-action-pill act-download" title="Descargar">
                                         <i class="fa-solid fa-download"></i> Descargar
                                     </a>
@@ -738,17 +752,14 @@
                     });
                 }
 
-                // Renderizar controles de paginación
                 const pagList = document.getElementById('pagination-list');
                 pagList.innerHTML = '';
 
-                // Botón Anterior
                 const prevLi = document.createElement('li');
                 prevLi.className = `page-item ${paginaActual === 1 ? 'disabled' : ''}`;
                 prevLi.innerHTML = `<a class="page-link" href="#" onclick="cargarDocumentos(${paginaActual - 1})"><i class="fa-solid fa-chevron-left"></i></a>`;
                 pagList.appendChild(prevLi);
 
-                // Páginas
                 for (let i = 1; i <= totalPaginas; i++) {
                     const li = document.createElement('li');
                     li.className = `page-item ${paginaActual === i ? 'active' : ''}`;
@@ -756,7 +767,6 @@
                     pagList.appendChild(li);
                 }
 
-                // Botón Siguiente
                 const nextLi = document.createElement('li');
                 nextLi.className = `page-item ${paginaActual === totalPaginas ? 'disabled' : ''}`;
                 nextLi.innerHTML = `<a class="page-link" href="#" onclick="cargarDocumentos(${paginaActual + 1})"><i class="fa-solid fa-chevron-right"></i></a>`;
@@ -779,10 +789,8 @@
                 const container = document.getElementById('dynamic-metadata-body');
                 container.innerHTML = '';
 
-                // Campos internos que nunca se muestran
                 const CAMPOS_OCULTOS = new Set(['texto_extraido', '_id', 'snippet_match']);
 
-                // Orden lógico de los campos prioritarios con sus etiquetas en español
                 const ORDEN_PRIORITARIO = [
                     { key: 'nombre',            label: 'Nombre del Documento' },
                     { key: 'codigo_doc',         label: 'Código Interno (ISO)' },
@@ -798,14 +806,12 @@
                     { key: 'clasificacion',      label: 'Clasificación' },
                 ];
 
-                // Función para detectar valores vacíos
                 function esVacio(val) {
                     if (val===null||val===undefined) return true;
                     const s = String(val).trim();
                     return s===''||s==='None'||s==='null'||s==='undefined';
                 }
 
-                // Helper para crear una *card* de metadato
                 function crearCard(label, value, esVersion=false) {
                     const valHtml = esVersion
                         ? `<span class="meta-card-value version-badge">${value}</span>`
@@ -817,7 +823,6 @@
                         </div>`;
                 }
 
-                // ---------- SECCIÓN 1: Información del Sistema ----------
                 let htmlPrincipales = '';
                 const clavesMostradas = new Set();
 
@@ -838,8 +843,6 @@
                     container.appendChild(seccion);
                 }
 
-                // ---------- SECCIÓN 2: Metadatos extraídos del archivo ----------
-                // Campos de OS que queremos presentar con etiquetas amigables
                 const ETIQUETAS_OS = {
                     peso_real_bytes:              'Tamaño en Bytes',
                     ultima_modificacion_sistema:  'Última Modificación (OS)',
@@ -855,7 +858,6 @@
                     if (clavesMostradas.has(clave)) continue;
                     if (esVacio(valor)) continue;
 
-                    // Etiqueta amigable: usar mapa de OS primero, luego transformar snake_case
                     const label = ETIQUETAS_OS[clave]
                         || clave.replace(/_/g, ' ').replace(/\b\w/g, c=>c.toUpperCase());
 
@@ -888,6 +890,42 @@
         function cerrarModal() {
             if (bsModalInstance) {
                 bsModalInstance.hide();
+            }
+        }
+
+        // --- NUEVA FUNCIÓN PARA MOSTRAR TODO EL JSON CRUDO (TEXTO Y METADATOS) ---
+        async function mostrarTodosLosMetadatos(archivo_descarga, nombre_amigable) {
+            try {
+                document.getElementById('json-meta-title').innerHTML = `<i class="fa-solid fa-code text-warning me-2"></i>${nombre_amigable} (JSON Crudo)`;
+                document.getElementById('json-meta-content').innerHTML = `
+                    <div class="text-center py-4"><i class="fa-solid fa-circle-notch fa-spin fa-2x text-primary"></i></div>`;
+                
+                if (!jsonModalInstance) {
+                    jsonModalInstance = new bootstrap.Modal(document.getElementById('jsonModal'));
+                }
+                jsonModalInstance.show();
+
+                const response = await fetch('/api/metadatos/' + encodeURIComponent(archivo_descarga));
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    let htmlList = '<div class="meta-section-title">TODOS LOS METADATOS Y TEXTO EXTRAÍDO (SIN FILTROS)</div>';
+                    htmlList += '<div style="background: #0f172a; color: #10b981; padding: 15px; border-radius: 10px; font-family: monospace; font-size: 13px; white-space: pre-wrap; word-wrap: break-word; border: 1px solid #1e293b;">';
+                    htmlList += JSON.stringify(data, null, 4);
+                    htmlList += '</div>';
+
+                    document.getElementById('json-meta-content').innerHTML = htmlList;
+                } else {
+                    document.getElementById('json-meta-content').innerHTML = `<div class="alert alert-danger">Error al cargar la data cruda.</div>`;
+                }
+            } catch (e) {
+                document.getElementById('json-meta-content').innerHTML = `<div class="alert alert-danger">Error de conexión.</div>`;
+            }
+        }
+
+        function cerrarJsonModal() {
+            if (jsonModalInstance) {
+                jsonModalInstance.hide();
             }
         }
     </script>

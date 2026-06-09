@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using MongoDB.Bson;
+using MongoDB.Driver;
 using QualityHub_DocumentSystem.Data;
 using QualityHub_DocumentSystem.Models;
 
@@ -470,5 +472,199 @@ namespace QualityHub_DocumentSystem.Controllers
         }
         public async Task<IActionResult> Creador() => View(await _context.Documento.ToListAsync());
         public IActionResult CerrarSesion() { HttpContext.Session.Clear(); return RedirectToAction("Index", "Home"); }
+
+        // ============================================================
+        // BÚSQUEDA AVANZADA EN MONGODB
+        // ============================================================
+        [HttpGet]
+        public async Task<IActionResult> BuscarDocumentosMongo(
+            string? q, string? ext, string? fecha,
+            int pagina = 1, int porPagina = 10)
+        {
+            try
+            {
+                var mongoClient = new MongoClient("mongodb://mongodb_container:27017");
+                var db = mongoClient.GetDatabase("proyectofinal");
+                var col = db.GetCollection<BsonDocument>("metadatos");
+
+                // Construir filtro dinámico
+                var filtros = new List<FilterDefinition<BsonDocument>>();
+
+                // Filtro por texto (busca en múltiples campos de metadatos)
+                if (!string.IsNullOrWhiteSpace(q))
+                {
+                    var textoRegex = new BsonRegularExpression(q, "i");
+                    var camposTexto = new[]
+                    {
+                        "nombre", "nombre_fisico", "codigo_iso", "estado",
+                        "author", "company", "title", "subject",
+                        "contenido_extraido", "texto_completo", "content"
+                    };
+                    var oTexto = camposTexto
+                        .Select(c => Builders<BsonDocument>.Filter.Regex(c, textoRegex))
+                        .ToList();
+                    filtros.Add(Builders<BsonDocument>.Filter.Or(oTexto));
+                }
+
+                // Filtro por extensión
+                if (!string.IsNullOrWhiteSpace(ext))
+                {
+                    var extRegex = new BsonRegularExpression(ext, "i");
+                    filtros.Add(Builders<BsonDocument>.Filter.Or(
+                        Builders<BsonDocument>.Filter.Regex("extension", extRegex),
+                        Builders<BsonDocument>.Filter.Regex("nombre_fisico", extRegex)
+                    ));
+                }
+
+                // Filtro por fecha
+                if (!string.IsNullOrWhiteSpace(fecha) && DateTime.TryParse(fecha, out var fechaFiltro))
+                {
+                    var inicio = new BsonDateTime(fechaFiltro.Date);
+                    var fin    = new BsonDateTime(fechaFiltro.Date.AddDays(1));
+                    filtros.Add(Builders<BsonDocument>.Filter.Or(
+                        Builders<BsonDocument>.Filter.And(
+                            Builders<BsonDocument>.Filter.Gte("fecha_modificacion", inicio),
+                            Builders<BsonDocument>.Filter.Lt("fecha_modificacion", fin)
+                        ),
+                        Builders<BsonDocument>.Filter.And(
+                            Builders<BsonDocument>.Filter.Gte("ultima_modificacion", inicio),
+                            Builders<BsonDocument>.Filter.Lt("ultima_modificacion", fin)
+                        )
+                    ));
+                }
+
+                var filtroFinal = filtros.Count > 0
+                    ? Builders<BsonDocument>.Filter.And(filtros)
+                    : Builders<BsonDocument>.Filter.Empty;
+
+                var total = await col.CountDocumentsAsync(filtroFinal);
+                var totalPaginas = (int)Math.Ceiling((double)total / porPagina);
+
+                var docs = await col
+                    .Find(filtroFinal)
+                    .Skip((pagina - 1) * porPagina)
+                    .Limit(porPagina)
+                    .ToListAsync();
+
+                var resultados = docs.Select(doc =>
+                {
+                    var nombre      = doc.GetValue("nombre", BsonNull.Value)?.ToString() ?? "";
+                    var nombreFis   = doc.GetValue("nombre_fisico", BsonNull.Value)?.ToString() ?? "";
+                    var codigoIso   = doc.GetValue("codigo_iso", BsonNull.Value)?.ToString() ?? "N/A";
+                    var estado      = doc.GetValue("estado", BsonNull.Value)?.ToString() ?? "";
+                    var version     = doc.GetValue("version", BsonNull.Value)?.ToString() ?? "N/A";
+                    var extension   = doc.GetValue("extension", BsonNull.Value)?.ToString() ?? "";
+                    var author      = doc.GetValue("author", BsonNull.Value)?.ToString() ?? "";
+                    var company     = doc.GetValue("company", BsonNull.Value)?.ToString() ?? "";
+                    var rutaWeb     = doc.GetValue("ruta_web", BsonNull.Value)?.ToString() ?? "";
+
+                    // Generar snippet con coincidencia resaltada
+                    string snippet = "";
+                    if (!string.IsNullOrWhiteSpace(q))
+                    {
+                        var camposPosibles = new[] { "contenido_extraido", "texto_completo", "content", "subject", "title" };
+                        foreach (var campo in camposPosibles)
+                        {
+                            if (doc.Contains(campo))
+                            {
+                                var texto = doc[campo]?.ToString() ?? "";
+                                if (texto.Contains(q, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    var idx = texto.IndexOf(q, StringComparison.OrdinalIgnoreCase);
+                                    var inicio = Math.Max(0, idx - 60);
+                                    var fin    = Math.Min(texto.Length, idx + q.Length + 80);
+                                    var frag   = texto.Substring(inicio, fin - inicio);
+                                    // Resaltar con <mark>
+                                    snippet = System.Text.RegularExpressions.Regex.Replace(
+                                        System.Net.WebUtility.HtmlEncode(frag),
+                                        System.Text.RegularExpressions.Regex.Escape(System.Net.WebUtility.HtmlEncode(q)),
+                                        m => $"<mark>{m.Value}</mark>",
+                                        System.Text.RegularExpressions.RegexOptions.IgnoreCase
+                                    );
+                                    if (inicio > 0) snippet = "..." + snippet;
+                                    if (fin < texto.Length) snippet += "...";
+                                    break;
+                                }
+                            }
+                        }
+                        // Si no hubo snippet de contenido, buscar en metadatos simples
+                        if (string.IsNullOrEmpty(snippet))
+                        {
+                            foreach (var elem in doc.Elements)
+                            {
+                                if (elem.Name.StartsWith("_")) continue;
+                                var val = elem.Value?.ToString() ?? "";
+                                if (val.Contains(q, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    var campo = elem.Name.Replace("_", " ");
+                                    snippet = $"<strong>{System.Net.WebUtility.HtmlEncode(campo)}:</strong> " +
+                                              System.Text.RegularExpressions.Regex.Replace(
+                                                  System.Net.WebUtility.HtmlEncode(val),
+                                                  System.Text.RegularExpressions.Regex.Escape(System.Net.WebUtility.HtmlEncode(q)),
+                                                  m => $"<mark>{m.Value}</mark>",
+                                                  System.Text.RegularExpressions.RegexOptions.IgnoreCase
+                                              );
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    return new
+                    {
+                        nombre, nombreFisico = nombreFis, codigoIso,
+                        estado, version, extension, author, company, rutaWeb, snippet
+                    };
+                }).ToList();
+
+                return Json(new { resultados, total, totalPaginas });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { resultados = new object[0], total = 0, totalPaginas = 0, error = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ObtenerMetadatosMongo(string archivo)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(archivo))
+                    return Json(new { error = "Nombre de archivo requerido" });
+
+                var mongoClient = new MongoClient("mongodb://mongodb_container:27017");
+                var db = mongoClient.GetDatabase("proyectofinal");
+                var col = db.GetCollection<BsonDocument>("metadatos");
+
+                var filtro = Builders<BsonDocument>.Filter.Or(
+                    Builders<BsonDocument>.Filter.Regex("nombre_fisico", new BsonRegularExpression(archivo, "i")),
+                    Builders<BsonDocument>.Filter.Regex("nombre", new BsonRegularExpression(archivo, "i"))
+                );
+
+                var doc = await col.Find(filtro).FirstOrDefaultAsync();
+
+                if (doc == null)
+                    return Json(new { error = "Documento no encontrado en MongoDB" });
+
+                // Convertir a diccionario limpio (sin ObjectId binarios)
+                var resultado = new Dictionary<string, object?>();
+                foreach (var elem in doc.Elements)
+                {
+                    if (elem.Name == "_id") continue;
+                    var val = elem.Value?.BsonType == BsonType.ObjectId
+                        ? elem.Value.AsObjectId.ToString()
+                        : elem.Value?.ToString();
+                    if (!string.IsNullOrEmpty(val))
+                        resultado[elem.Name] = val;
+                }
+
+                return Json(resultado);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
+            }
+        }
     }
 }

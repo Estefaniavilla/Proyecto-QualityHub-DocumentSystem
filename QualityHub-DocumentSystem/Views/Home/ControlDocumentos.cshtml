@@ -1,4 +1,4 @@
-﻿@model IEnumerable<QualityHub_DocumentSystem.Models.Documento>
+@model IEnumerable<QualityHub_DocumentSystem.Models.Documento>
 @{
     ViewData["Title"] = "Control de Documentos";
     int roleID = ViewBag.UserRole ?? 0;
@@ -155,6 +155,74 @@
         border-radius: 6px;
         border-left: 3px solid #3b82f6;
     }
+
+    /* Estilos Premium del Buscador y Snippets MongoDB */
+    .search-bar-container {
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 4px 25px rgba(0, 0, 0, 0.04);
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s ease;
+    }
+    .search-bar-container:focus-within {
+        box-shadow: 0 4px 30px rgba(59, 130, 246, 0.12);
+        border-color: #3b82f6;
+    }
+    .input-search-premium {
+        border: none;
+        outline: none;
+        box-shadow: none !important;
+        font-size: 1.05rem;
+    }
+    .filter-badge {
+        background: #f1f5f9;
+        color: #475569;
+        font-weight: 500;
+        font-size: 0.85rem;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        transition: all 0.2s;
+    }
+    .filter-badge:hover {
+        background: #e2e8f0;
+    }
+    .snippet-match {
+        font-size: 0.82rem;
+        color: #475569;
+        background: #f8fafc;
+        border-left: 3px solid #cbd5e1;
+        padding: 6px 12px;
+        border-radius: 4px;
+        margin-top: 6px;
+        line-height: 1.4;
+    }
+    .snippet-match mark {
+        background-color: rgba(253, 224, 71, 0.6);
+        color: #1e293b;
+        padding: 0 2px;
+        border-radius: 2px;
+        font-weight: 600;
+    }
+    .metadata-tag {
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: #e0f2fe;
+        color: #0369a1;
+        margin-right: 4px;
+        display: inline-block;
+    }
+    .paginator-btn {
+        min-width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
 </style>
 
 <input type="file" id="globalFileUploader" style="display: none;" onchange="procesarArchivoSeleccionado(this)" />
@@ -183,7 +251,39 @@
         <div class="alert alert-danger alert-dismissible fade show shadow-sm mb-4" role="alert"><i class="fa-solid fa-circle-xmark me-2"></i> @TempData["Error"] <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
     }
 
-    <div class="card custom-card">
+    <!-- BUSCADOR PREMIUM DE METADATOS Y ARCHIVOS (MONGODB) -->
+    <div class="search-bar-container p-3 mb-4">
+        <div class="row g-3 align-items-center">
+            <div class="col-lg-6 col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent border-0 text-muted"><i class="fa-solid fa-magnifying-glass fs-5"></i></span>
+                    <input type="text" id="inputBuscarMongo" class="form-control input-search-premium" placeholder="Buscar palabras clave, códigos o metadatos de MongoDB..." onkeyup="evaluarBusqueda(event)">
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-3">
+                <select id="selectFiltroExt" class="form-select border-1" style="border-radius: 8px;" onchange="buscarMongo(1)">
+                    <option value="">-- Todos los formatos --</option>
+                    <option value="PDF">PDF (.pdf)</option>
+                    <option value="DOCX">Word (.docx)</option>
+                    <option value="XLSX">Excel (.xlsx)</option>
+                </select>
+            </div>
+            <div class="col-lg-2 col-md-4">
+                <input type="date" id="inputFiltroFecha" class="form-control border-1" style="border-radius: 8px;" onchange="buscarMongo(1)" title="Filtrar por última modificación">
+            </div>
+            <div class="col-lg-2 col-md-12 d-flex gap-2">
+                <button type="button" class="btn btn-primary w-100 fw-bold d-flex align-items-center justify-content-center gap-2" style="border-radius: 8px;" onclick="buscarMongo(1)">
+                    <i class="fa-solid fa-filter"></i> Buscar
+                </button>
+                <button type="button" class="btn btn-light border" style="border-radius: 8px;" onclick="limpiarBuscador()" title="Restaurar lista original">
+                    <i class="fa-solid fa-arrow-rotate-left"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTENEDOR DE TABLAS ESTATICAS (VISTA ORIGINAL RAZOR) -->
+    <div class="card custom-card" id="cardOriginalRazor">
         <div class="card-body p-0">
             <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center" style="border-radius: 16px 16px 0 0;">
                 <ul class="nav nav-pills card-header-pills" id="docTabs" role="tablist">
@@ -244,6 +344,36 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- CONTENEDOR DINÁMICO DE RESULTADOS DE BÚSQUEDA MONGO -->
+    <div class="card custom-card d-none" id="cardResultadosMongo">
+        <div class="p-3 bg-white border-bottom d-flex justify-content-between align-items-center" style="border-radius: 16px 16px 0 0;">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary rounded-pill px-3 py-2 fw-bold text-white shadow-sm" id="badgeTotalResultados">0 resultados</span>
+                <span class="text-muted small">Búsqueda avanzada en metadatos y contenido MongoDB</span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-premium mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 12%;">CÓDIGO</th>
+                            <th style="width: 40%;">COINCIDENCIAS Y ARCHIVO</th>
+                            <th style="width: 8%;" class="text-center">VERSIÓN</th>
+                            <th style="width: 15%;">ESTADO</th>
+                            <th class="text-center" style="width: 25%;">ACCIONES</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyResultadosMongo">
+                        <!-- Renderizado vía Javascript -->
+                    </tbody>
+                </table>
+            </div>
+            <!-- Paginador -->
+            <div class="p-3 border-top d-flex justify-content-center" id="paginacionMongo"></div>
         </div>
     </div>
 </div>
@@ -420,4 +550,240 @@
             document.getElementById('historialTimeline').innerHTML = html || "<div class='text-center text-muted'>Sin historial.</div>";
         });
     }
+
+    // ============================================================
+    // MOTOR DE BÚSQUEDA MONGODB - INTEGRACIÓN CSHTML
+    // ============================================================
+    const CURRENT_ROLE_ID = @roleID;
+    let paginaActual = 1;
+    let busquedaTimer = null;
+
+    // Evalúa si hay texto para disparar búsqueda automática al escribir
+    function evaluarBusqueda(event) {
+        clearTimeout(busquedaTimer);
+        const q = document.getElementById('inputBuscarMongo').value.trim();
+        if (q.length === 0) {
+            limpiarBuscador();
+            return;
+        }
+        if (q.length < 2) return;
+        busquedaTimer = setTimeout(() => buscarMongo(1), 400);
+    }
+
+    // Función principal que consulta la API de búsqueda MongoDB
+    function buscarMongo(pagina) {
+        paginaActual = pagina || 1;
+        const q    = document.getElementById('inputBuscarMongo').value.trim();
+        const ext  = document.getElementById('selectFiltroExt').value;
+        const fecha = document.getElementById('inputFiltroFecha').value;
+
+        const params = new URLSearchParams({ q, ext, fecha, pagina: paginaActual, porPagina: 10 });
+
+        // Mostrar spinner en tabla de resultados
+        document.getElementById('cardOriginalRazor').classList.add('d-none');
+        document.getElementById('cardResultadosMongo').classList.remove('d-none');
+        document.getElementById('tbodyResultadosMongo').innerHTML =
+            `<tr><td colspan="5" class="text-center py-5">
+                <i class="fa-solid fa-spinner fa-spin fa-2x text-primary mb-2 d-block"></i>
+                <span class="text-muted">Buscando en MongoDB...</span>
+             </td></tr>`;
+
+        fetch('/Home/BuscarDocumentosMongo?' + params.toString())
+            .then(res => res.json())
+            .then(data => {
+                const docs = data.resultados || [];
+                const total = data.total || 0;
+                const totalPags = data.totalPaginas || 1;
+
+                document.getElementById('badgeTotalResultados').textContent =
+                    total === 1 ? '1 resultado' : `${total} resultados`;
+
+                if (docs.length === 0) {
+                    document.getElementById('tbodyResultadosMongo').innerHTML =
+                        `<tr><td colspan="5" class="text-center p-5 text-muted">
+                            <i class="bi bi-search fs-1 d-block mb-2 opacity-50"></i>
+                            <span class="fw-semibold">No se encontraron documentos con esos criterios.</span>
+                         </td></tr>`;
+                    document.getElementById('paginacionMongo').innerHTML = '';
+                    return;
+                }
+
+                let tbody = '';
+                docs.forEach(doc => { tbody += renderizarFilaMongo(doc); });
+                document.getElementById('tbodyResultadosMongo').innerHTML = tbody;
+
+                // Paginación
+                renderizarPaginacion(paginaActual, totalPags);
+
+                // Reasignar evento del visor a los nuevos botones
+                document.querySelectorAll('#tbodyResultadosMongo .btn-abrir-visor-mongo').forEach(btn => {
+                    btn.addEventListener('click', function () {
+                        const url = this.getAttribute('data-url');
+                        const iframe = document.getElementById('iframeVisorDocumento');
+                        if (url.toLowerCase().endsWith('.pdf')) { iframe.src = url; }
+                        else { iframe.src = "https://view.officeapps.live.com/op/embed.aspx?src=" + encodeURIComponent(window.location.origin + url); }
+                        new bootstrap.Modal(document.getElementById('modalVisorDocumental')).show();
+                    });
+                });
+            })
+            .catch(err => {
+                document.getElementById('tbodyResultadosMongo').innerHTML =
+                    `<tr><td colspan="5" class="text-center py-5 text-danger">
+                        <i class="fa-solid fa-circle-xmark fa-2x d-block mb-2"></i>
+                        Error al conectar con MongoDB. Verifica que el contenedor esté activo.
+                     </td></tr>`;
+                console.error('Error búsqueda MongoDB:', err);
+            });
+    }
+
+    // Renderiza una fila dinámica de resultado de MongoDB con snippet + acciones por rol
+    function renderizarFilaMongo(doc) {
+        const iconos = {
+            'PDF':  "<i class='fa-solid fa-file-pdf file-icon-box icon-pdf'></i>",
+            'DOCX': "<i class='fa-solid fa-file-word file-icon-box icon-word'></i>",
+            'DOC':  "<i class='fa-solid fa-file-word file-icon-box icon-word'></i>",
+            'XLSX': "<i class='fa-solid fa-file-excel file-icon-box icon-excel'></i>",
+            'XLS':  "<i class='fa-solid fa-file-excel file-icon-box icon-excel'></i>"
+        };
+        const ext = (doc.extension || '').toUpperCase().replace('.', '');
+        const icono = iconos[ext] || "<i class='fa-solid fa-file-lines file-icon-box text-secondary'></i>";
+
+        const snippet = doc.snippet
+            ? `<div class="snippet-match mt-1">${doc.snippet}</div>`
+            : '';
+
+        const tags = [];
+        if (doc.author)   tags.push(`<span class="metadata-tag"><i class="fa-solid fa-user" style="font-size:0.65rem;"></i> ${doc.author}</span>`);
+        if (doc.company)  tags.push(`<span class="metadata-tag"><i class="fa-solid fa-building" style="font-size:0.65rem;"></i> ${doc.company}</span>`);
+        const tagsHtml = tags.length ? `<div class="mt-1">${tags.join('')}</div>` : '';
+
+        const estadoBadge = (() => {
+            const e = doc.estado || 'Desconocido';
+            if (e === 'Vigente' || e === 'Autorizado') return `<span class="badge bg-success fw-bold px-2 py-1">${e}</span>`;
+            if (e.includes('Revisión') || e.includes('Pendiente')) return `<span class="badge bg-warning text-dark fw-bold px-2 py-1">${e}</span>`;
+            if (e === 'Rechazado') return `<span class="badge bg-danger fw-bold px-2 py-1">${e}</span>`;
+            return `<span class="badge bg-secondary fw-bold px-2 py-1">${e}</span>`;
+        })();
+
+        // Acciones adaptadas al rol del usuario actual
+        let accionesHtml = '';
+        const rutaWeb = doc.rutaWeb || '';
+        const tieneArchivo = rutaWeb && rutaWeb !== '';
+
+        if (tieneArchivo) {
+            accionesHtml += `<button type="button" class="btn btn-sm btn-outline-success me-1 btn-abrir-visor-mongo" data-url="${rutaWeb}" style="border-radius:8px;" title="Ver Documento">
+                                <i class="fa-solid fa-eye"></i>
+                             </button>
+                             <a href="${rutaWeb}" class="btn btn-sm btn-outline-primary me-1" download style="border-radius:8px;" title="Descargar">
+                                <i class="fa-solid fa-download"></i>
+                             </a>`;
+        }
+
+        accionesHtml += `<button type="button" class="btn btn-sm btn-outline-info" style="border-radius:8px;" title="Ver Metadatos" onclick="mostrarMetadatosMongo('${doc.nombreFisico || ''}')">
+                            <i class="fa-solid fa-database"></i>
+                         </button>`;
+
+        return `<tr>
+            <td class="fw-bold text-secondary small align-middle">${doc.codigoIso || 'N/A'}</td>
+            <td class="align-middle">
+                <div class="d-flex align-items-start">
+                    <div style="min-width:30px; padding-top:2px;">${icono}</div>
+                    <div>
+                        <span class="fw-semibold d-block">${doc.nombre || doc.nombreFisico || 'Sin nombre'}</span>
+                        ${tagsHtml}
+                        ${snippet}
+                    </div>
+                </div>
+            </td>
+            <td class="text-center align-middle"><span class="badge bg-light text-dark border fw-bold px-2 py-1">${doc.version || 'N/A'}</span></td>
+            <td class="align-middle">${estadoBadge}</td>
+            <td class="text-center align-middle">${accionesHtml}</td>
+        </tr>`;
+    }
+
+    // Renderiza los botones de paginación
+    function renderizarPaginacion(actual, total) {
+        if (total <= 1) { document.getElementById('paginacionMongo').innerHTML = ''; return; }
+        let html = '';
+        for (let i = 1; i <= total; i++) {
+            html += `<button type="button" class="paginator-btn btn ${i === actual ? 'btn-primary' : 'btn-light border'} mx-1" onclick="buscarMongo(${i})">${i}</button>`;
+        }
+        document.getElementById('paginacionMongo').innerHTML = html;
+    }
+
+    // Muestra modal con los metadatos completos del documento desde MongoDB
+    function mostrarMetadatosMongo(nombreFisico) {
+        if (!nombreFisico) {
+            Swal.fire('Sin metadatos', 'Este documento no tiene metadatos registrados en MongoDB.', 'info');
+            return;
+        }
+        const modal = new bootstrap.Modal(document.getElementById('modalMetadatosMongo'));
+        document.getElementById('metadatosBody').innerHTML =
+            `<div class="text-center py-4"><i class="fa-solid fa-spinner fa-spin fa-2x text-primary"></i><p class="mt-2 text-muted">Cargando metadatos...</p></div>`;
+        document.getElementById('metadatosTitulo').textContent = 'Metadatos: ' + nombreFisico;
+        modal.show();
+
+        fetch('/Home/ObtenerMetadatosMongo?archivo=' + encodeURIComponent(nombreFisico))
+            .then(res => res.json())
+            .then(data => {
+                if (!data || data.error) {
+                    document.getElementById('metadatosBody').innerHTML =
+                        `<div class="alert alert-warning m-3"><i class="fa-solid fa-circle-exclamation me-2"></i>No se encontraron metadatos para este archivo.</div>`;
+                    return;
+                }
+                const ignorar = ['_id', 'id', '__v'];
+                let rows = '';
+                for (const [k, v] of Object.entries(data)) {
+                    if (ignorar.includes(k.toLowerCase())) continue;
+                    const val = v !== null && v !== '' && v !== undefined ? String(v) : null;
+                    if (!val) continue;
+                    const label = k.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2');
+                    rows += `<tr>
+                        <td class="fw-semibold text-muted small" style="width:38%; text-transform:capitalize;">${label}</td>
+                        <td class="small text-dark fw-medium">${val}</td>
+                    </tr>`;
+                }
+                document.getElementById('metadatosBody').innerHTML = rows
+                    ? `<table class="table table-sm table-hover mb-0">${rows}</table>`
+                    : `<div class="text-center text-muted py-3">Sin campos con valores.</div>`;
+            })
+            .catch(() => {
+                document.getElementById('metadatosBody').innerHTML =
+                    `<div class="alert alert-danger m-3"><i class="fa-solid fa-triangle-exclamation me-2"></i>Error al obtener metadatos desde MongoDB.</div>`;
+            });
+    }
+
+    // Restaura la tabla estática original y limpia los filtros
+    function limpiarBuscador() {
+        document.getElementById('inputBuscarMongo').value = '';
+        document.getElementById('selectFiltroExt').value = '';
+        document.getElementById('inputFiltroFecha').value = '';
+        document.getElementById('cardResultadosMongo').classList.add('d-none');
+        document.getElementById('cardOriginalRazor').classList.remove('d-none');
+        document.getElementById('tbodyResultadosMongo').innerHTML = '';
+        document.getElementById('paginacionMongo').innerHTML = '';
+    }
 </script>
+
+<!-- MODAL PREMIUM DE METADATOS MONGODB -->
+<div class="modal fade" id="modalMetadatosMongo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 560px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+            <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e3a5f 0%, #0369a1 100%); border-radius: 16px 16px 0 0;">
+                <h5 class="modal-title fw-bold text-white" id="metadatosTitulo">
+                    <i class="fa-solid fa-database me-2"></i>Metadatos del Documento
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0" id="metadatosBody" style="max-height: 65vh; overflow-y: auto;">
+                <!-- Renderizado dinámico vía JS -->
+            </div>
+            <div class="modal-footer border-0 d-flex justify-content-center pb-3">
+                <button type="button" class="btn fw-bold text-white px-5 py-2 shadow-sm" data-bs-dismiss="modal"
+                        style="border-radius: 10px; background: linear-gradient(135deg, #1e3a5f, #0369a1);">
+                    <i class="fa-solid fa-xmark me-1"></i> Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
